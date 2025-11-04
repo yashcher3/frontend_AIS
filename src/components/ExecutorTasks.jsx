@@ -109,11 +109,12 @@ const StatusBadge = styled.span`
       case 'in_progress': return '#17a2b8';
       case 'completed': return '#28a745';
       case 'waiting_approval': return '#ffc107';
+      case 'rework': return '#fd7e14'; // Оранжевый для доработки
       case 'pending': return '#6c757d';
       default: return '#6c757d';
     }
   }};
-  color: white;
+  color: ${props => props.status === 'waiting_approval' ? '#212529' : 'white'};
   padding: 6px 12px;
   border-radius: 4px;
   font-size: 12px;
@@ -293,28 +294,29 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
 
   // Загрузка этапов текущего исполнителя
   const loadStages = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/executor/stages/', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const stagesData = await response.json();
-        setStages(stagesData);
-      } else {
-        throw new Error('Ошибка загрузки этапов');
+  setLoading(true);
+  try {
+    const token = localStorage.getItem('access_token');
+    const response = await fetch('http://localhost:8000/executor/stages/', {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
-    } catch (error) {
-      console.error('Error loading stages:', error);
-      setMessage({ type: 'error', text: 'Ошибка при загрузке задач' });
-    } finally {
-      setLoading(false);
+    });
+
+    if (response.ok) {
+      const stagesData = await response.json();
+      // Теперь включаем этапы со статусом rework
+      setStages(stagesData);
+    } else {
+      throw new Error('Ошибка загрузки этапов');
     }
-  };
+  } catch (error) {
+    console.error('Error loading stages:', error);
+    setMessage({ type: 'error', text: 'Ошибка при загрузке задач' });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const filterStages = () => {
     let filtered = stages;
@@ -371,10 +373,11 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
       });
 
       setFormData(initialFormData);
-      setInitialFormData(initialFormData); // ДОБАВЛЕНО: сохраняем начальные данные
+      setInitialFormData(initialFormData);
       
-      // ДОБАВЛЕНО: устанавливаем режим редактирования в зависимости от статуса
-      setIsEditing(stage.status === 'in_progress');
+      // РАСШИРЕНА ЛОГИКА: разрешаем редактирование для rework
+      const editableStatuses = ['in_progress', 'rework'];
+      setIsEditing(editableStatuses.includes(stage.status));
     }
   } catch (error) {
     console.error('Error loading stage data:', error);
@@ -385,7 +388,10 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   const handleStageClick = async (stage) => {
   setSelectedStage(stage);
   setMessage({ type: '', text: '' });
-  setIsEditing(false); // ДОБАВЛЕНО: сбрасываем режим редактирования
+
+  const editableStatuses = ['in_progress', 'rework'];
+  setIsEditing(editableStatuses.includes(stage.status));
+  
   await loadStageData(stage);
 };
 
@@ -434,53 +440,36 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   };
 
   const handleFileDelete = async (templateId) => {
-    const attributeData = formData[templateId];
-    if (!attributeData.user_file_path) return;
+  const attributeData = formData[templateId];
+  if (!attributeData.user_file_path) return;
 
-    try {
-      const token = localStorage.getItem('access_token');
-      
-      // Если атрибут уже сохранен в БД, удаляем его
-      if (attributeData.attribute_id) {
-        const deleteResponse = await fetch(`http://localhost:8000/attributes/${attributeData.attribute_id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!deleteResponse.ok) {
-          throw new Error('Ошибка удаления атрибута');
-        }
-      }
-
-      // Удаляем файл из хранилища
-      const deleteFileResponse = await fetch('http://localhost:8000/delete-file/', {
-        method: 'POST',
+  try {
+    const token = localStorage.getItem('access_token');
+    
+    // Если атрибут уже сохранен в БД, обновляем его (удаляем файл)
+    if (attributeData.attribute_id) {
+      const deleteResponse = await fetch(`http://localhost:8000/attributes/${attributeData.attribute_id}`, {
+        method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          file_path: attributeData.user_file_path
-        })
+          'Authorization': `Bearer ${token}`
+        }
       });
 
-      if (!deleteFileResponse.ok) {
-        console.warn('Не удалось удалить файл из хранилища');
+      if (!deleteResponse.ok) {
+        const errorData = await deleteResponse.json();
+        throw new Error(errorData.detail || 'Ошибка удаления файла');
       }
-
-      // Обновляем formData
-      handleInputChange(templateId, 'user_file_path', '');
-      handleInputChange(templateId, 'attribute_id', null);
-      
-      setMessage({ type: 'success', text: 'Файл удален' });
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      setMessage({ type: 'error', text: 'Ошибка при удалении файла' });
     }
-  };
 
+    // Обновляем formData - очищаем file_path
+    handleInputChange(templateId, 'user_file_path', '');
+    
+    setMessage({ type: 'success', text: 'Файл удален' });
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    setMessage({ type: 'error', text: error.message });
+  }
+};
   const validateForm = () => {
     // Проверяем, что все обязательные поля заполнены
     for (const template of attributeTemplates) {
@@ -530,25 +519,19 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
       throw new Error('Ошибка сохранения данных');
     }
 
-    // Завершаем этап
-    const completeResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/complete/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (completeResponse.ok) {
-      const result = await completeResponse.json();
-
-      let successMessage = 'Данные успешно сохранены! ';
-      if (selectedStage.closing_rule === 'executor_closing') {
-        successMessage += 'Этап завершен.';
-        if (result.case_status === 'completed') {
-          successMessage += ' Дело завершено.';
+    // ОСОБАЯ ЛОГИКА ДЛЯ REWORK: при отправке на доработке, статус меняется на waiting_approval
+    if (selectedStage.status === 'rework') {
+      const reworkResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/rework-submit/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
+      });
+
+      if (reworkResponse.ok) {
+        const result = await reworkResponse.json();
+        setMessage({ type: 'success', text: 'Исправления отправлены на проверку руководителю' });
         
-        // ДОБАВЛЕНО: для executor_closing закрываем модальное окно
         setTimeout(() => {
           setSelectedStage(null);
           setFormData({});
@@ -556,38 +539,62 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
           loadStages();
         }, 2000);
       } else {
-        successMessage += ' Этап отправлен на проверку руководителю.';
-        
-        // ДОБАВЛЕНО: для manager_closing обновляем этап и переходим в режим просмотра
-        const updatedStage = {
-          ...selectedStage,
-          status: 'waiting_approval'
-        };
-        setSelectedStage(updatedStage);
-        setIsEditing(false);
-        
-        // Обновляем список этапов
-        loadStages();
+        const errorData = await reworkResponse.json();
+        throw new Error(errorData.detail || 'Ошибка отправки исправлений');
       }
-
-      setMessage({ type: 'success', text: successMessage });
-
     } else {
-      throw new Error('Ошибка завершения этапа');
+      // Стандартная логика для других статусов (in_progress)
+      const completeResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/complete/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (completeResponse.ok) {
+        const result = await completeResponse.json();
+
+        let successMessage = 'Данные успешно сохранены! ';
+        if (selectedStage.closing_rule === 'executor_closing') {
+          successMessage += 'Этап завершен.';
+          if (result.case_status === 'completed') {
+            successMessage += ' Дело завершено.';
+          }
+          
+          setTimeout(() => {
+            setSelectedStage(null);
+            setFormData({});
+            setExistingAttributes([]);
+            loadStages();
+          }, 2000);
+        } else {
+          successMessage += ' Этап отправлен на проверку руководителю.';
+          
+          const updatedStage = {
+            ...selectedStage,
+            status: 'waiting_approval'
+          };
+          setSelectedStage(updatedStage);
+          setIsEditing(false);
+          
+          loadStages();
+        }
+
+        setMessage({ type: 'success', text: successMessage });
+
+      } else {
+        const errorData = await completeResponse.json();
+        throw new Error(errorData.detail || 'Ошибка завершения этапа');
+      }
     }
 
   } catch (error) {
     console.error('Error submitting data:', error);
-    setMessage({ type: 'error', text: 'Ошибка при сохранении данных' });
+    setMessage({ type: 'error', text: error.message });
   } finally {
     setSubmitting(false);
   }
 };
-
-  const handleEdit = () => {
-  setIsEditing(true);
-};
-
 
 const handleCancelEdit = () => {
   setIsEditing(false);
@@ -606,6 +613,7 @@ const handleCancelEdit = () => {
     case 'in_progress': return 'В работе';
     case 'completed': return 'Завершен';
     case 'waiting_approval': return 'Ожидает проверки';
+    case 'rework': return 'На доработке';
     case 'pending': return 'Ожидание';
     default: return status;
   }
@@ -615,6 +623,10 @@ const handleCancelEdit = () => {
     if (!filePath) return '';
     return filePath.split('/').pop();
   };
+
+  const handleEdit = () => {
+  setIsEditing(true);
+};
 
   // Вычисляем прогресс заполнения формы
   const getFormProgress = () => {
@@ -857,6 +869,8 @@ const handleCancelEdit = () => {
         </div>
       )}
     </FieldContainer>
+
+    
   );
 })}
 
@@ -922,8 +936,31 @@ const handleCancelEdit = () => {
     ⚠ Заполните все обязательные поля для отправки
   </div>
 )}
-          </ModalContent>
+
+    {/* ДОБАВЬТЕ ЭТОТ БЛОК ДЛЯ КОММЕНТАРИЯ МЕНЕДЖЕРА */}
+{(selectedStage.status === 'rework' || selectedStage.status === 'waiting_approval') && selectedStage.manager_comment && (
+  <FieldContainer style={{ 
+    borderLeftColor: '#fd7e14', 
+    background: '#fff3cd',
+    marginBottom: '20px'
+  }}>
+    <Label style={{ color: '#856404', fontWeight: 'bold' }}>
+      Комментарий руководителя:
+    </Label>
+    <div style={{ 
+      padding: '12px', 
+      background: 'white', 
+      border: '1px solid #ffeaa7', 
+      borderRadius: '4px',
+      fontStyle: 'italic',
+      color: '#856404'
+    }}>
+      {selectedStage.manager_comment}
+    </div>
+  </FieldContainer>
+)} </ModalContent>
         </Modal>
+        
       )}
     </Container>
   );
