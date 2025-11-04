@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { styled } from 'styled-components';
 
-// Стили (аналогично предыдущему компоненту, но с небольшими изменениями)
 const Container = styled.div`
   padding: 20px;
   max-width: 1200px;
@@ -255,8 +254,8 @@ export default function ManagerApproval({ onBack, userRole }) {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      mode: 'cors', // Явно указываем режим CORS
-      credentials: 'include', // Включаем учетные данные
+      mode: 'cors', 
+      credentials: 'include', 
     });
 
     console.log('Response status:', response.status);
@@ -277,7 +276,7 @@ export default function ManagerApproval({ onBack, userRole }) {
       type: 'error', 
       text: `Ошибка при загрузке этапов для проверки: ${error.message}` 
     });
-    setStages([]); // Сбрасываем stages при ошибке
+    setStages([]); 
   } finally {
     setLoading(false);
   }
@@ -355,7 +354,7 @@ const downloadFile = async (attributeId, filename) => {
     }
   } catch (error) {
     console.error('Error loading attribute templates:', error);
-    // Не показываем ошибку пользователю, так как это вспомогательные данные
+
   }
 };
   const getFileNameFromPath = (filePath) => {
@@ -367,8 +366,8 @@ const downloadFile = async (attributeId, filename) => {
   
 
   const handleStageClick = (stage) => {
-  console.log('Selected stage data:', stage); // ДОБАВЛЕНО: отладочный вывод
-  console.log('Stage attributes:', stage.attributes); // ДОБАВЛЕНО: проверка атрибутов
+  console.log('Selected stage data:', stage); 
+  console.log('Stage attributes:', stage.attributes); 
   setSelectedStage(stage);
   setComment('');
   setMessage({ type: '', text: '' });
@@ -563,7 +562,7 @@ const downloadFile = async (attributeId, filename) => {
         </TableContainer>
       </Section>
 
-      {/* Модальное окно проверки этапа */}
+
       {selectedStage && (
         <Modal onClick={() => !processing && setSelectedStage(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -594,7 +593,7 @@ const downloadFile = async (attributeId, filename) => {
                 <ErrorMessage>{message.text}</ErrorMessage>
             )}
 
-            {/* Заполненные атрибуты */}
+ 
 <div style={{ marginBottom: '25px' }}>
   <h4 style={{ color: '#2c3e50', marginBottom: '15px' }}>Заполненные данные:</h4>
   {selectedStage.attributes && selectedStage.attributes.length > 0 ? (
@@ -607,15 +606,14 @@ const downloadFile = async (attributeId, filename) => {
           <AttributeLabel>
             {fieldLabel}
           </AttributeLabel>
-          
-          {/* Текстовые данные */}
+ 
           {attribute.user_text && (
             <AttributeValue>
               {attribute.user_text}
             </AttributeValue>
           )}
           
-          {/* Файловые данные */}
+
           {attribute.user_file_path && (
             <div style={{ marginTop: attribute.user_text ? '10px' : '0' }}>
               <button 
@@ -654,7 +652,6 @@ const downloadFile = async (attributeId, filename) => {
   )}
 </div>
 
-            {/* Комментарий менеджера */}
             <FormGroup>
               <Label>
                 Комментарий менеджера {!comment.trim() && '(обязателен)'}
@@ -667,7 +664,6 @@ const downloadFile = async (attributeId, filename) => {
               />
             </FormGroup>
 
-            {/* Кнопки действий */}
             <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
               <Button
                 $success

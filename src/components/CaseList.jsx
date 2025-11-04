@@ -311,7 +311,6 @@ const EmptyMessage = styled.div`
   margin: 20px 0;
 `;
 
-// Модальное окно
 const Modal = styled.div`
   position: fixed;
   top: 0;
@@ -341,17 +340,15 @@ export default function CaseList({ onBack, userRole }) {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
-  
-  // Состояния для фильтрации
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [executorFilter, setExecutorFilter] = useState('all');
-  
-  // Состояния для сортировки
+
   const [sortColumn, setSortColumn] = useState('id');
   const [sortDirection, setSortDirection] = useState('desc');
   
-  // Состояния для пагинации
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
@@ -360,7 +357,6 @@ export default function CaseList({ onBack, userRole }) {
   const [caseTemplates, setCaseTemplates] = useState({});
   const [allExecutors, setAllExecutors] = useState([]);
 
-  // Загрузка данных при изменении параметров
   useEffect(() => {
     loadCases();
   }, [currentPage, pageSize, sortColumn, sortDirection]);
@@ -457,7 +453,6 @@ export default function CaseList({ onBack, userRole }) {
     }
   };
 
-  // Функция для получения ФИО исполнителя по логину
   const getExecutorFullName = (login) => {
     if (!login) return 'Не назначен';
     
@@ -496,19 +491,16 @@ export default function CaseList({ onBack, userRole }) {
     );
   };
 
-  // Функция для получения части stage_template_id после первой точки
   const getAfterFirstDot = (stageTemplateId) => {
     if (!stageTemplateId) return 'Не указан';
-    
-    // Разделяем по точке и берем все после первой точки
+
     const parts = stageTemplateId.split('.');
-    
-    // Если есть точка и есть часть после нее
+
     if (parts.length > 1) {
       return parts.slice(1).join('.');
     }
     
-    // Если точки нет, возвращаем исходное значение
+
     return stageTemplateId;
   };
 
@@ -537,7 +529,6 @@ export default function CaseList({ onBack, userRole }) {
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
-  // Генерация номеров страниц для пагинации
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
@@ -562,7 +553,7 @@ export default function CaseList({ onBack, userRole }) {
 
   return (
     <Container>
-      <Title>📋 Реестр дел</Title>
+      <Title>Реестр дел</Title>
 
       <Section>
         <ActionBar>
@@ -613,7 +604,7 @@ export default function CaseList({ onBack, userRole }) {
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'end' }}>
             <Button onClick={handleSearch}>
-              🔍 Применить фильтры
+              Применить фильтры
             </Button>
 
             <Button onClick={() => {
@@ -622,12 +613,11 @@ export default function CaseList({ onBack, userRole }) {
               setExecutorFilter('all');
               setCurrentPage(1);
             }}>
-              🗑️ Сбросить
+              Сбросить
             </Button>
           </div>
         </SearchContainer>
 
-        {/* Таблица дел */}
         <TableContainer>
           {cases.length === 0 && !loading ? (
             <EmptyMessage>Дела не найдены. Измените параметры поиска или создайте новые дела.</EmptyMessage>
@@ -711,7 +701,7 @@ export default function CaseList({ onBack, userRole }) {
                 </tbody>
               </Table>
 
-              {/* Пагинация */}
+              
               {totalPages > 1 && (
                 <PaginationContainer>
                   <PaginationInfo>

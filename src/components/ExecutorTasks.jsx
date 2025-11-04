@@ -292,7 +292,6 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
     filterStages();
   }, [stages, searchTerm]);
 
-  // Загрузка этапов текущего исполнителя
   const loadStages = async () => {
   setLoading(true);
   try {
@@ -305,7 +304,7 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
 
     if (response.ok) {
       const stagesData = await response.json();
-      // Теперь включаем этапы со статусом rework
+
       setStages(stagesData);
     } else {
       throw new Error('Ошибка загрузки этапов');
@@ -330,7 +329,6 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
     setFilteredStages(filtered);
   };
 
-  // Загрузка шаблонов атрибутов и существующих данных для этапа
   const loadStageData = async (stage) => {
   try {
     const token = localStorage.getItem('access_token');
@@ -342,7 +340,6 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
       }
     });
 
-    // Загружаем существующие атрибуты
     const attributesResponse = await fetch(`http://localhost:8000/stages/${stage.id}/attributes/`, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -445,8 +442,7 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
 
   try {
     const token = localStorage.getItem('access_token');
-    
-    // Если атрибут уже сохранен в БД, обновляем его (удаляем файл)
+
     if (attributeData.attribute_id) {
       const deleteResponse = await fetch(`http://localhost:8000/attributes/${attributeData.attribute_id}`, {
         method: 'DELETE',
@@ -461,7 +457,6 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
       }
     }
 
-    // Обновляем formData - очищаем file_path
     handleInputChange(templateId, 'user_file_path', '');
     
     setMessage({ type: 'success', text: 'Файл удален' });
@@ -471,7 +466,7 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   }
 };
   const validateForm = () => {
-    // Проверяем, что все обязательные поля заполнены
+ 
     for (const template of attributeTemplates) {
       const fieldData = formData[template.id];
       if (!fieldData.user_text && !fieldData.user_file_path) {
@@ -498,14 +493,12 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   try {
     const token = localStorage.getItem('access_token');
 
-    // Подготавливаем данные атрибутов
     const attributesData = Object.values(formData).map(attr => ({
       attribute_template_id: attr.attribute_template_id,
       user_text: attr.user_text || null,
       user_file_path: attr.user_file_path || null
     }));
 
-    // Сохраняем атрибуты
     const attributesResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/attributes/batch/`, {
       method: 'POST',
       headers: {
@@ -519,7 +512,6 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
       throw new Error('Ошибка сохранения данных');
     }
 
-    // ОСОБАЯ ЛОГИКА ДЛЯ REWORK: при отправке на доработке, статус меняется на waiting_approval
     if (selectedStage.status === 'rework') {
       const reworkResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/rework-submit/`, {
         method: 'POST',
@@ -543,7 +535,7 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
         throw new Error(errorData.detail || 'Ошибка отправки исправлений');
       }
     } else {
-      // Стандартная логика для других статусов (in_progress)
+
       const completeResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/complete/`, {
         method: 'POST',
         headers: {
@@ -644,12 +636,12 @@ const handleCancelEdit = () => {
 
   return (
     <Container>
-      <Title>📝 Мои текущие задачи</Title>
+      <Title>Мои текущие задачи</Title>
 
       <Section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <Button onClick={onBack}>← Назад</Button>
-          <Button $primary onClick={loadStages}>🔄 Обновить</Button>
+          <Button $primary onClick={loadStages}>Обновить</Button>
         </div>
 
         <SearchContainer>
@@ -841,7 +833,7 @@ const handleCancelEdit = () => {
         <div>
           {fieldData.user_file_path ? (
             <FileInfo>
-              <span>✅ {getFileNameFromPath(fieldData.user_file_path)}</span>
+              <span>{getFileNameFromPath(fieldData.user_file_path)}</span>
               {isEditing && (
                 <SmallButton
                   $danger
@@ -875,7 +867,7 @@ const handleCancelEdit = () => {
 })}
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
-  {/* ДОБАВЛЕНО: разные сценарии в зависимости от статуса и режима */}
+
   {isEditing ? (
     <>
       <Button
@@ -885,8 +877,8 @@ const handleCancelEdit = () => {
       >
         {submitting ? '⏳ Сохранение...' :
          selectedStage.closing_rule === 'executor_closing'
-          ? '✅ Завершить этап'
-          : '📤 Отправить на проверку'}
+          ? 'Завершить этап'
+          : 'Отправить на проверку'}
       </Button>
       <Button
         onClick={handleCancelEdit}
@@ -901,7 +893,7 @@ const handleCancelEdit = () => {
         $primary
         onClick={handleEdit}
       >
-        ✏️ Изменить
+       Изменить
       </Button>
       <Button
         onClick={() => setSelectedStage(null)}
@@ -918,8 +910,8 @@ const handleCancelEdit = () => {
       >
         {submitting ? '⏳ Сохранение...' :
          selectedStage.closing_rule === 'executor_closing'
-          ? '✅ Завершить этап'
-          : '📤 Отправить на проверку'}
+          ? 'Завершить этап'
+          : 'Отправить на проверку'}
       </Button>
       <Button
         onClick={() => setSelectedStage(null)}
@@ -937,7 +929,7 @@ const handleCancelEdit = () => {
   </div>
 )}
 
-    {/* ДОБАВЬТЕ ЭТОТ БЛОК ДЛЯ КОММЕНТАРИЯ МЕНЕДЖЕРА */}
+
 {(selectedStage.status === 'rework' || selectedStage.status === 'waiting_approval') && selectedStage.manager_comment && (
   <FieldContainer style={{ 
     borderLeftColor: '#fd7e14', 

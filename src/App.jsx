@@ -8,7 +8,7 @@ import CreateCase from "./components/CreateCase.jsx"
 import CaseList from "./components/CaseList.jsx" 
 import {styled} from "styled-components"
 import ExecutorTasks from "./components/ExecutorTasks.jsx"
-import ManagerApproval from "./components/ManagerApproval.jsx" // ДОБАВЛЕНО
+import ManagerApproval from "./components/ManagerApproval.jsx"
 
 const HeaderContainer = styled.header`
   height: 50px;
@@ -63,11 +63,15 @@ function App() {
       return null;
     }
     
-    if (tab === "profile") {
-      return <Button onClick={() => setTab("main")}>На главную</Button>;
-    } else {
+    //if (tab === "profile") {
+      //return <Button onClick={() => setTab("main")}>На главную</Button>;
+    //} else {
+      //return <Button onClick={() => setTab("profile")}>Профиль</Button>;
+    //}
+    if (tab != "profile") {
       return <Button onClick={() => setTab("profile")}>Профиль</Button>;
     }
+    
   };
 
   return (
@@ -94,9 +98,18 @@ function App() {
             }}>
               <p><strong>Логин:</strong> {login}</p>
               <p><strong>Роль:</strong> {userRole}</p>
-              {canCreateCases() && <p><strong>Доступ:</strong> Создание дел разрешено</p>}
-              {isExecutor() && <p><strong>Доступ:</strong> Просмотр задач исполнителя</p>}
-              {isManagerOrAdmin() && <p><strong>Доступ:</strong> Утверждение этапов</p>}
+              {canCreateCases() && (
+                <>
+                  <p><strong>Доступ:</strong> Создание дел разрешено</p>
+                  <p><strong>Возможности:</strong> Создание шаблонов, создание дел, просмотр реестра дел, утверждение этапов</p>
+                </>
+              )}
+              {isExecutor() && (
+                <>
+                  <p><strong>Доступ:</strong> Исполнение задач</p>
+                  <p><strong>Возможности:</strong> Просмотр и выполнение назначенных задач, отправка этапов на проверку</p>
+                </>
+              )}
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <Button onClick={() => setTab("main")}>На главную</Button>
@@ -110,17 +123,33 @@ function App() {
           </div>
         )}
 
-        {/* TabsSection показываем всем авторизованным пользователям */}
         {(tab === "main" && text_autorization === "authorized") && ( 
-          <TabsSection 
-            active={tab} 
-            onChange={(current) => setTab(current)}
-            onCreateCase={() => setTab("creation cases")}
-            onViewCases={() => setTab("cases list")}
-            onViewTasks={() => setTab("executor tasks")}
-            onManagerApproval={() => setTab("manager approval")} // ДОБАВЛЕНО
-            userRole={userRole}
-          />
+          isExecutor() ? (
+            <ExecutorTasks 
+              onBack={() => setTab("profile")}
+              userRole={userRole}
+              currentUser={{ username: login }}
+            />
+          ) : (
+            <div>
+              <TabsSection 
+                active={tab} 
+                onChange={(current) => setTab(current)}
+                onCreateCase={() => setTab("creation cases")}
+                onViewCases={() => setTab("cases list")}
+                onManagerApproval={() => setTab("manager approval")}
+                userRole={userRole}
+              />
+              <div style={{ 
+                padding: '20px', 
+                textAlign: 'center', 
+                color: '#666',
+                fontStyle: 'italic'
+              }}>
+
+              </div>
+            </div>
+          )
         )}         
 
         {tab === "feedback" && ( 
@@ -130,15 +159,6 @@ function App() {
             userRole={userRole}
           />
         )} 
-
-        {/* Компонент задач исполнителя - доступен только для user */}
-        {(tab === "executor tasks" && text_autorization === "authorized" && isExecutor()) && (
-          <ExecutorTasks 
-            onBack={() => setTab("main")}
-            userRole={userRole}
-            currentUser={{ username: login }}
-          />
-        )}    
 
         {tab === "react flow" && text_autorization === "authorized" && <FlowChartModified/>}
         
@@ -153,7 +173,7 @@ function App() {
           />
         )}
 
-        {/* Раздел для просмотра дел - только для админов и менеджеров */}
+
         {(tab === "cases list" && text_autorization === "authorized" && canCreateCases()) && (
           <CaseList 
             onBack={() => setTab("main")}
@@ -161,7 +181,6 @@ function App() {
           />
         )}
 
-        {/* ДОБАВЛЕНО: Раздел для утверждения этапов - только для админов и менеджеров */}
         {(tab === "manager approval" && text_autorization === "authorized" && isManagerOrAdmin()) && (
           <ManagerApproval 
             onBack={() => setTab("main")}

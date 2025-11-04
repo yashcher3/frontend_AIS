@@ -97,12 +97,11 @@ export default function FeedbackSection({onAuthorizationSuccess, login_user, use
     };
 
     const handleLogout = () => {
-        // Удаляем данные из localStorage
+
         localStorage.removeItem('access_token');
         localStorage.removeItem('username');
         localStorage.removeItem('user_role');
 
-        // Сбрасываем форму
         setForm({
             name: "",
             password: "",
@@ -110,7 +109,7 @@ export default function FeedbackSection({onAuthorizationSuccess, login_user, use
             passwordHasError: true
         });
 
-        // Уведомляем родительский компонент
+ 
         onAuthorizationSuccess("unauthorized");
         login_user(null);
 
@@ -147,7 +146,6 @@ export default function FeedbackSection({onAuthorizationSuccess, login_user, use
         <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto' }}>
             <h2>Авторизация</h2>
 
-            {/* Отображаем текущую роль, если пользователь авторизован */}
             {userRole && (
                 <div style={{ 
                     marginBottom: '15px', 
