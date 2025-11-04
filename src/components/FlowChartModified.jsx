@@ -1029,8 +1029,8 @@ const FlowChartModified = () => {
       position: { x: Math.random() * 400, y: Math.random() * 400 },
       data: { 
         ...stableNodeData,
-        file_fields: 0, // начальное значение
-        text_fields: 0, // начальное значение
+        file_fields: 0, 
+        text_fields: 0, 
         desc: '', 
         duration: '',
         name_stage: '',
@@ -1042,7 +1042,7 @@ const FlowChartModified = () => {
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes, stableNodeData]);
 
-  // Pass edges to nodes for connection counting
+
   const nodesWithEdges = useMemo(() => 
     nodes.map(node => ({
       ...node,

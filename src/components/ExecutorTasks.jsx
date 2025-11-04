@@ -767,7 +767,7 @@ const handleCancelEdit = () => {
                 <ErrorMessage>{message.text}</ErrorMessage>
             )}
 
-            {/* Поля для заполнения */}
+
             {attributeTemplates.map(template => {
   const fieldData = formData[template.id];
   const isFieldFilled = fieldData.user_text || fieldData.user_file_path;
@@ -804,7 +804,7 @@ const handleCancelEdit = () => {
     );
   }
 
-  // Режим редактирования
+  
   return (
     <FieldContainer key={template.id}>
       <Label>
