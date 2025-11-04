@@ -109,7 +109,7 @@ const StatusBadge = styled.span`
       case 'in_progress': return '#17a2b8';
       case 'completed': return '#28a745';
       case 'waiting_approval': return '#ffc107';
-      case 'rework': return '#fd7e14'; // Оранжевый для доработки
+      case 'rework': return '#fd7e14'; 
       case 'pending': return '#6c757d';
       default: return '#6c757d';
     }
@@ -333,7 +333,6 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   try {
     const token = localStorage.getItem('access_token');
 
-    // Загружаем шаблоны атрибутов
     const templatesResponse = await fetch(`http://localhost:8000/stage_templates/${stage.stage_template_id}/attribute_templates/`, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -372,7 +371,6 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
       setFormData(initialFormData);
       setInitialFormData(initialFormData);
       
-      // РАСШИРЕНА ЛОГИКА: разрешаем редактирование для rework
       const editableStatuses = ['in_progress', 'rework'];
       setIsEditing(editableStatuses.includes(stage.status));
     }
@@ -590,7 +588,7 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
 
 const handleCancelEdit = () => {
   setIsEditing(false);
-  setFormData(initialFormData); // Восстанавливаем исходные данные
+  setFormData(initialFormData);
   setMessage({ type: '', text: '' });
 };
 
@@ -620,7 +618,6 @@ const handleCancelEdit = () => {
   setIsEditing(true);
 };
 
-  // Вычисляем прогресс заполнения формы
   const getFormProgress = () => {
     if (attributeTemplates.length === 0) return 0;
     const filledFields = attributeTemplates.filter(template => {
@@ -722,7 +719,7 @@ const handleCancelEdit = () => {
         </TableContainer>
       </Section>
 
-      {/* Модальное окно заполнения этапа */}
+
       {selectedStage && (
         <Modal onClick={() => !submitting && setSelectedStage(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -747,7 +744,7 @@ const handleCancelEdit = () => {
                   : 'После заполнения этап отправится на проверку руководителю'
               }</p>
               
-              {/* Прогресс заполнения */}
+              
               <div style={{ marginTop: '15px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                   <span style={{ fontSize: '14px' }}>Прогресс заполнения:</span>
@@ -772,7 +769,7 @@ const handleCancelEdit = () => {
   const fieldData = formData[template.id];
   const isFieldFilled = fieldData.user_text || fieldData.user_file_path;
 
-  // ДОБАВЛЕНО: режим только для чтения
+
   if (!isEditing && selectedStage?.status === 'waiting_approval') {
     return (
       <FieldContainer key={template.id}>

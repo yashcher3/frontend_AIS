@@ -13,13 +13,11 @@ import {
 import '@xyflow/react/dist/style.css';
 import { v4 as uuidv4 } from 'uuid';
 
-// Modified Custom Node Component - УБРАНЫ ПОЛЯ ВВОДА КОЛИЧЕСТВА ПОЛЕЙ
 const CustomNodeModified = React.memo(({ data, id }) => {
   const [showConditionInput, setShowConditionInput] = useState(false);
   const [newCondition, setNewCondition] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
-  // Count outgoing connections from this node
   const outgoingEdges = data.edges ? data.edges.filter(edge => edge.source === id) : [];
   const hasMultipleConnections = outgoingEdges.length >= 2;
 
@@ -46,7 +44,6 @@ const CustomNodeModified = React.memo(({ data, id }) => {
     data.onUpdateNodeData(id, { [field]: value });
   };
 
-  // Обработчик для кнопки настроек
   const handleSettingsClick = (e) => {
     e.stopPropagation();
     console.log('Settings button clicked for node:', id);
@@ -57,7 +54,6 @@ const CustomNodeModified = React.memo(({ data, id }) => {
     }
   };
 
-  // Larger handle styles
   const handleStyle = {
     width: 14,
     height: 14,
@@ -77,15 +73,14 @@ const CustomNodeModified = React.memo(({ data, id }) => {
       boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
       position: 'relative'
     }}>
-      {/* Input Handle - Left */}
+
       <Handle
         type="target"
         position={Position.Left}
         style={handleStyle}
         className="node-handle"
       />
-      
-      {/* Output Handle - Right */}
+
       <Handle
         type="source"
         position={Position.Right}
@@ -104,7 +99,7 @@ const CustomNodeModified = React.memo(({ data, id }) => {
         />
       </div>
       
-      {/* УБРАНЫ ПОЛЯ ДЛЯ ВВОДА КОЛИЧЕСТВА ПОЛЕЙ */}
+
       
       <div style={{ marginBottom: '10px' }}>
         <label>Описание:</label>
@@ -277,7 +272,6 @@ const CustomNodeModified = React.memo(({ data, id }) => {
   );
 });
 
-// ОБНОВЛЕННЫЙ КОМПОНЕНТ ПАНЕЛИ АТРИБУТОВ
 const AttributePanel = React.memo(({ 
   isOpen, 
   onClose, 
@@ -288,16 +282,15 @@ const AttributePanel = React.memo(({
   const [fileFields, setFileFields] = useState([]);
   const [textFields, setTextFields] = useState([]);
 
-  // Инициализируем поля при открытии панели
+  
   useEffect(() => {
     if (isOpen && currentNode) {
       console.log('Initializing attributes for node:', currentNode.id);
       
-      // Загружаем существующие шаблоны если есть
+      
       const existingFileFields = currentNode.data.file_fields || 0;
       const existingTextFields = currentNode.data.text_fields || 0;
       
-      // Создаем массивы полей
       const newFileFields = [];
       const newTextFields = [];
       
@@ -360,10 +353,9 @@ const AttributePanel = React.memo(({
 
   const handleSave = async () => {
     if (currentNode) {
-      // Формируем массив атрибутов для отправки на бэкенд
       const attributes = [];
       
-      // Добавляем файловые поля
+      
       fileFields.forEach((field, index) => {
         attributes.push({
           field_type: 'file_field',
@@ -434,7 +426,7 @@ const AttributePanel = React.memo(({
         <p><strong>Всего полей: {fileFields.length + textFields.length}</strong></p>
       </div>
 
-      {/* Кнопки добавления полей */}
+      
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <button 
           onClick={handleAddFileField}
@@ -466,7 +458,7 @@ const AttributePanel = React.memo(({
         </button>
       </div>
 
-      {/* Файловые поля */}
+      
       <div style={{ marginBottom: '30px' }}>
         <h4>Файловые поля ({fileFields.length})</h4>
         {fileFields.map((field, index) => (
@@ -583,13 +575,11 @@ const FlowChartModified = () => {
   });
   const [attributeTemplates, setAttributeTemplates] = useState({});
 
-  // Используем useRef для хранения актуального состояния nodes
   const nodesRef = useRef(nodes);
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
 
-  // Мемоизируем nodeTypes
   const nodeTypes = useMemo(() => ({
     customModified: CustomNodeModified,
   }), []);
@@ -602,7 +592,7 @@ const FlowChartModified = () => {
       .filter(Boolean);
   }, [edges, nodes]);
 
-  // Проверка токенов
+
   const isTokenExpired = (token) => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -614,7 +604,6 @@ const FlowChartModified = () => {
     }
   };
 
-  // Функция для выхода
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('username');
@@ -622,7 +611,6 @@ const FlowChartModified = () => {
     window.location.reload();
   };
 
-  // Функции для обновления узлов
   const updateNodeConditions = useCallback((nodeId, condition) => {
     setNodes((nds) =>
       nds.map((node) =>
@@ -701,15 +689,14 @@ const FlowChartModified = () => {
     const stageNumber = nodesRef.current.find(n => n.id === nodeId)?.data.numberDisplay;
     if (!stageNumber) return;
 
-    // Формируем данные согласно модели бэкенда
     const templates = attributes.map(attr => ({
       field_type: attr.field_type,
       field_index: attr.field_index,
       label: attr.label,
-      stage_template_id: stageNumber // Добавляем обязательное поле
+      stage_template_id: stageNumber 
     }));
 
-    console.log('Sending templates:', templates); // Для отладки
+    console.log('Sending templates:', templates); 
 
     const response = await fetch(`http://localhost:8000/stage_templates/${stageNumber}/attribute_templates/`, {
       method: 'POST',
@@ -863,7 +850,6 @@ const FlowChartModified = () => {
       return;
     }
 
-    // Проверяем что все поля имеют названия
     const nodesWithMissingTemplates = stagesWithTemplates.filter(stage => {
       const totalFields = stage.file_fields + stage.text_fields;
       return stage.attribute_templates.length !== totalFields;
@@ -915,7 +901,7 @@ const FlowChartModified = () => {
     }
   }, [nodes, edges, getNodeChildren, attributeTemplates, loadAttributeTemplates]);
 
-  // Функция для обновления номеров всех блоков
+
   const updateBlockNumbers = useCallback(() => {
     if (nodes.length === 0) {
       setRootNodeId(null);

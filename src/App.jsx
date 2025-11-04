@@ -162,7 +162,6 @@ function App() {
 
         {tab === "react flow" && text_autorization === "authorized" && <FlowChartModified/>}
         
-        {/* Раздел для создания дела - только для админов и менеджеров */}
         {(tab === "creation cases" && text_autorization === "authorized" && canCreateCases()) && (
           <CreateCase 
             onCancel={() => setTab("main")}

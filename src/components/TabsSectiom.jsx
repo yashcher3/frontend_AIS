@@ -15,7 +15,7 @@ export default function TabsSection({active, onChange, onCreateCase, onViewCases
             padding: "10px 0",
             minHeight: "50px"
         }}>
-            {/* Кнопки для администраторов и менеджеров */}
+            
             {canCreate && (
                 <>
                     <Button 
@@ -65,7 +65,6 @@ export default function TabsSection({active, onChange, onCreateCase, onViewCases
                 </>
             )}
             
-            {/* Сообщение для пользователей без прав */}
             {!canCreate && !isExecutor && (
                 <div style={{ 
                     padding: '8px 12px', 
