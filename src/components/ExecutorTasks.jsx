@@ -995,7 +995,7 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
                     onClick={handleSubmit}
                     disabled={submitting || uploading || !isFormValid()}
                   >
-                    {submitting ? 'Сохранение...' : /* Убрал смайлик */
+                    {submitting ? 'Сохранение...' :
                     selectedStage.closing_rule === 'executor_closing'
                       ? 'Завершить этап'
                       : 'Отправить на проверку'}
@@ -1012,7 +1012,7 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
             
             {!isFormValid() && isEditing && (
               <div style={{ fontSize: '14px', color: '#dc3545', marginTop: '10px' }}>
-                Заполните все обязательные поля для отправки {/* Убрал предупреждающий знак */}
+                Заполните все обязательные поля для отправки 
               </div>
             )}
 
