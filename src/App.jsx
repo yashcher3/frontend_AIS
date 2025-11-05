@@ -43,7 +43,7 @@ function App() {
     set_Autorization("Войти");
     setTab("Войти");
     setUserRole(null);
-    set_Login("aboba");
+    set_Login("none");
   };
 
   const canCreateCases = () => {
@@ -160,7 +160,7 @@ function App() {
           />
         )} 
 
-        {tab === "react flow" && text_autorization === "authorized" && <FlowChartModified/>}
+        {tab === "react flow" && text_autorization === "authorized" && <FlowChartModified onExportSuccess={() => setTab("main")} onExit={() => setTab("main")}/>}
         
         {(tab === "creation cases" && text_autorization === "authorized" && canCreateCases()) && (
           <CreateCase 

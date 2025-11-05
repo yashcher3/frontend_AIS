@@ -737,7 +737,7 @@ export default function CreateCase({ onCancel, onCreateSuccess }) {
     <Container>
       <Title>Создание нового дела</Title>
 
-      {/* Выбор шаблона с полнотекстовым поиском */}
+      
       <Section>
         <FormGroup>
           <Label htmlFor="template-search">
@@ -784,7 +784,6 @@ export default function CreateCase({ onCancel, onCreateSuccess }) {
         )}
       </Section>
 
-      {/* Название дела */}
       {selectedTemplate && (
         <Section>
           <FormGroup>
@@ -803,7 +802,7 @@ export default function CreateCase({ onCancel, onCreateSuccess }) {
         </Section>
       )}
 
-      {/* Настройка этапов */}
+      
       {selectedTemplate && stages.length > 0 && (
         <Section>
           <h3 style={{ marginBottom: '20px', color: '#333' }}>
@@ -830,7 +829,7 @@ export default function CreateCase({ onCancel, onCreateSuccess }) {
                   </div>
                 )}
 
-                {/* Поля этапа */}
+                
                 {stage.attributes && stage.attributes.length > 0 && (
                   <FieldList>
                     <Label>Поля этапа:</Label>
@@ -845,7 +844,7 @@ export default function CreateCase({ onCancel, onCreateSuccess }) {
                   </FieldList>
                 )}
 
-                {/* Настройки выполнения */}
+                
                 <FormGroup>
                   <Label>
                     Тип выполнения этапа <Required>*</Required>
@@ -923,7 +922,7 @@ export default function CreateCase({ onCancel, onCreateSuccess }) {
                     Дедлайн этапа <Required>*</Required>
                   </Label>
                   
-                  {/* Заменяем стандартный date input на наш кастомный */}
+                  
                   <DateInputDMY
                     id={`deadline_${index}`}
                     value={stage.deadline}
@@ -944,13 +943,13 @@ export default function CreateCase({ onCancel, onCreateSuccess }) {
         </Section>
       )}
 
-      {/* Кнопки действий */}
+      
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
   <Button onClick={onCancel} disabled={isSubmitting}>
     Отмена
   </Button>
   <Button 
-    $primary  // Используем transient prop
+    $primary  
     onClick={handleSubmit}
     disabled={isSubmitting || !selectedTemplate || stages.length === 0}
   >

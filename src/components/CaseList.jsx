@@ -1,18 +1,23 @@
+
 import React, { useState, useEffect } from 'react';
 import { styled } from 'styled-components';
 
 const Container = styled.div`
-  padding: 20px;
-  max-width: 95vw;
-  margin: 0 auto;
-  width: 100%;
+  padding: 10px 0;
+  width: 100vw;
+  margin: 0;
+  box-sizing: border-box;
+  max-width: none;
+  position: absolute;
+  left: 0;
+  top: 38px; 
 `;
 
 const Section = styled.div`
   background: white;
   border-radius: 8px;
-  padding: 25px;
-  margin-bottom: 20px;
+  padding: 15px;
+  margin: 0 0 10px 0;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   width: 100%;
   box-sizing: border-box;
@@ -20,21 +25,21 @@ const Section = styled.div`
 
 const Title = styled.h2`
   color: #333;
-  margin-bottom: 25px;
+  margin: 0 0 15px 0;
   border-bottom: 2px solid #007bff;
-  padding-bottom: 12px;
-  font-size: 24px;
+  padding-bottom: 8px;
+  font-size: 20px;
 `;
 
 const Button = styled.button`
   background: ${props => props.$primary ? '#007bff' : '#6c757d'};
   color: white;
   border: none;
-  padding: 12px 24px;
+  padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
-  margin-right: 12px;
+  font-size: 13px;
+  margin-right: 8px;
   transition: all 0.2s;
   
   &:hover {
@@ -50,16 +55,17 @@ const Button = styled.button`
 `;
 
 const TableContainer = styled.div`
-  overflow-x: visible;
-  margin-top: 20px;
+  overflow-x: auto;
+  margin: 10px 0 0 0;
   width: 100%;
+  max-height: 75vh;
 `;
 
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
-  min-width: auto;
+  font-size: 13px;
+  table-layout: fixed;
 `;
 
 const TableHeader = styled.thead`
@@ -74,7 +80,6 @@ const TableRow = styled.tr`
   
   &:hover {
     background-color: #f0f8ff;
-    transform: scale(1.01);
   }
   
   &:nth-child(even) {
@@ -83,7 +88,7 @@ const TableRow = styled.tr`
 `;
 
 const TableHeaderCell = styled.th`
-  padding: 18px 15px;
+  padding: 12px 8px;
   text-align: left;
   font-weight: 700;
   color: #2c3e50;
@@ -97,37 +102,32 @@ const TableHeaderCell = styled.th`
     background: linear-gradient(180deg, #e9ecef 0%, #dee2e6 100%);
   }
   
-  // Обновленные ширины для колонок
-  &:nth-child(1) { width: 80px; }  /* ID */
-  &:nth-child(2) { width: 300px; } /* Название дела */
-  &:nth-child(3) { width: 120px; } /* Текущий этап */
-  &:nth-child(4) { width: 250px; } /* Исполнитель (ФИО) */
-  &:nth-child(5) { width: 180px; } /* Дедлайн */
-  &:nth-child(6) { width: 250px; } /* Шаблон */
-  &:nth-child(7) { width: 140px; } /* Статус */
+  &:nth-child(1) { width: 35%; }
+  &:nth-child(2) { width: 15%; }
+  &:nth-child(3) { width: 20%; }
+  &:nth-child(4) { width: 15%; }
+  &:nth-child(5) { width: 15%; }
 `;
 
 const SortIcon = styled.span`
-  margin-left: 8px;
+  margin-left: 4px;
   font-weight: bold;
   color: #007bff;
-  font-size: 12px;
+  font-size: 11px;
 `;
 
 const TableCell = styled.td`
-  padding: 18px 15px;
+  padding: 12px 8px;
   vertical-align: middle;
   border-bottom: 1px solid #e9ecef;
-  line-height: 1.4;
+  line-height: 1.3;
+  word-wrap: break-word;
   
-  // Соответствующие ширины для ячеек
-  &:nth-child(1) { width: 80px; font-weight: 700; color: #007bff; }
-  &:nth-child(2) { width: 300px; }
-  &:nth-child(3) { width: 120px; }
-  &:nth-child(4) { width: 250px; }
-  &:nth-child(5) { width: 180px; }
-  &:nth-child(6) { width: 250px; }
-  &:nth-child(7) { width: 140px; }
+  &:nth-child(1) { width: 35%; font-weight: 600; }
+  &:nth-child(2) { width: 15%; }
+  &:nth-child(3) { width: 20%; }
+  &:nth-child(4) { width: 15%; }
+  &:nth-child(5) { width: 15%; }
 `;
 
 const StatusBadge = styled.span`
@@ -140,34 +140,54 @@ const StatusBadge = styled.span`
     }
   }};
   color: white;
-  padding: 8px 16px;
+  padding: 4px 8px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
   display: inline-block;
   text-align: center;
-  min-width: 80px;
+  min-width: 60px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const DeadlineBadge = styled.span`
+  background: ${props => {
+    switch(props.status) {
+      case 'overdue': return '#dc3545';
+      case 'soon': return '#ffc107';
+      case 'safe': return '#28a745';
+      default: return '#6c757d';
+    }
+  }};
+  color: ${props => props.status === 'soon' ? '#212529' : 'white'};
+  padding: 3px 6px;
+  border-radius: 12px;
+  font-size: 9px;
+  font-weight: bold;
+  display: inline-block;
+  text-align: center;
+  min-width: 45px;
+  margin-left: 4px;
 `;
 
 const SearchContainer = styled.div`
   display: flex;
-  gap: 20px;
-  margin-bottom: 25px;
+  gap: 12px;
+  margin: 0 0 15px 0;
   flex-wrap: wrap;
   align-items: end;
-  padding: 20px;
+  padding: 12px;
   background: #f8f9fa;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #e9ecef;
 `;
 
 const SearchInput = styled.input`
-  padding: 12px 15px;
+  padding: 8px 10px;
   border: 2px solid #e9ecef;
   border-radius: 6px;
-  font-size: 14px;
-  min-width: 250px;
+  font-size: 13px;
+  min-width: 180px;
   transition: border-color 0.2s;
   
   &:focus {
@@ -177,12 +197,12 @@ const SearchInput = styled.input`
 `;
 
 const Select = styled.select`
-  padding: 12px 15px;
+  padding: 8px 10px;
   border: 2px solid #e9ecef;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   background: white;
-  min-width: 200px;
+  min-width: 160px;
   transition: border-color 0.2s;
   
   &:focus {
@@ -195,16 +215,16 @@ const ActionBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
+  margin: 0 0 15px 0;
   flex-wrap: wrap;
-  gap: 20px;
-  padding-bottom: 20px;
+  gap: 12px;
+  padding-bottom: 12px;
   border-bottom: 2px solid #e9ecef;
 `;
 
 const FiltersContainer = styled.div`
   display: flex;
-  gap: 20px;
+  gap: 12px;
   flex-wrap: wrap;
   flex: 1;
 `;
@@ -212,14 +232,14 @@ const FiltersContainer = styled.div`
 const FilterGroup = styled.div`
   display: flex;
   flex-direction: column;
-  min-width: 200px;
+  min-width: 160px;
 `;
 
 const FilterLabel = styled.label`
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 11px;
   color: #495057;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -229,34 +249,34 @@ const PaginationContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 30px;
-  padding: 20px 0;
+  margin: 15px 0 0 0;
+  padding: 12px 0;
   border-top: 2px solid #dee2e6;
   background: #f8f9fa;
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 6px;
+  padding: 12px;
 `;
 
 const PaginationInfo = styled.div`
-  font-size: 14px;
+  font-size: 12px;
   color: #495057;
   font-weight: 600;
 `;
 
 const PaginationControls = styled.div`
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 `;
 
 const PageButton = styled.button`
-  padding: 10px 16px;
+  padding: 6px 10px;
   border: 2px solid #dee2e6;
   background: white;
   border-radius: 6px;
   cursor: pointer;
-  min-width: 45px;
+  min-width: 35px;
   font-weight: 600;
   transition: all 0.2s;
   
@@ -282,33 +302,33 @@ const PageButton = styled.button`
 `;
 
 const PageSizeSelect = styled.select`
-  padding: 10px 15px;
+  padding: 6px 10px;
   border: 2px solid #dee2e6;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 12px;
   background: white;
   font-weight: 600;
 `;
 
 const LoadingMessage = styled.div`
   text-align: center;
-  padding: 60px;
+  padding: 30px;
   color: #666;
-  font-size: 18px;
+  font-size: 14px;
   background: #f8f9fa;
-  border-radius: 8px;
-  margin: 20px 0;
+  border-radius: 6px;
+  margin: 12px 0;
 `;
 
 const EmptyMessage = styled.div`
   text-align: center;
-  padding: 60px;
+  padding: 30px;
   color: #666;
   font-style: italic;
-  font-size: 16px;
+  font-size: 13px;
   background: #f8f9fa;
-  border-radius: 8px;
-  margin: 20px 0;
+  border-radius: 6px;
+  margin: 12px 0;
 `;
 
 const Modal = styled.div`
@@ -322,41 +342,68 @@ const Modal = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 0;
 `;
 
 const ModalContent = styled.div`
   background: white;
-  padding: 40px;
-  border-radius: 12px;
-  max-width: 800px;
+  padding: 25px;
+  border-radius: 10px;
+  max-width: 700px;
   width: 95%;
-  max-height: 90vh;
+  max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  margin: 0 auto;
+`;
+
+// Стили для сброса отступов у родительских элементов
+const GlobalReset = styled.div`
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  #root, .App, .app {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw;
+    overflow-x: hidden;
+  }
 `;
 
 export default function CaseList({ onBack, userRole }) {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
-
+  
+  // Состояния для фильтрации
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [executorFilter, setExecutorFilter] = useState('all');
-
-  const [sortColumn, setSortColumn] = useState('id');
-  const [sortDirection, setSortDirection] = useState('desc');
+  const [deadlineFilter, setDeadlineFilter] = useState('all');
   
-
+  // Состояния для сортировки
+  const [sortColumn, setSortColumn] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
+  
+  // Состояния для пагинации
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(8);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   
   const [caseTemplates, setCaseTemplates] = useState({});
   const [allExecutors, setAllExecutors] = useState([]);
 
+  // Загрузка данных при изменении параметров
   useEffect(() => {
     loadCases();
   }, [currentPage, pageSize, sortColumn, sortDirection]);
@@ -380,6 +427,7 @@ export default function CaseList({ onBack, userRole }) {
       if (searchTerm) params.append('name', searchTerm);
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (executorFilter !== 'all') params.append('executor', executorFilter);
+      if (deadlineFilter !== 'all') params.append('deadline_filter', deadlineFilter);
 
       const response = await fetch(`http://localhost:8000/cases/?${params}`, {
         headers: {
@@ -388,7 +436,7 @@ export default function CaseList({ onBack, userRole }) {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json(); // Исправлено: response.json() вместо Response.json()
         console.log('Cases data:', data);
         
         if (data.cases !== undefined) {
@@ -453,11 +501,36 @@ export default function CaseList({ onBack, userRole }) {
     }
   };
 
+  // Функция для получения ФИО исполнителя по логину
   const getExecutorFullName = (login) => {
     if (!login) return 'Не назначен';
     
     const executor = allExecutors.find(exec => exec.login === login);
     return executor ? executor.full_name : login;
+  };
+
+  // Функция для определения статуса дедлайна
+  const getDeadlineStatus = (deadline) => {
+    if (!deadline) return 'unknown';
+    
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    const timeDiff = deadlineDate.getTime() - now.getTime();
+    const daysDiff = timeDiff / (1000 * 3600 * 24);
+    
+    if (daysDiff < 0) return 'overdue';
+    if (daysDiff <= 3) return 'soon';
+    return 'safe';
+  };
+
+  // Функция для получения текста статуса дедлайна
+  const getDeadlineStatusText = (status) => {
+    switch(status) {
+      case 'overdue': return 'Просрочен';
+      case 'soon': return 'Скоро';
+      case 'safe': return 'Норма';
+      default: return 'Не указан';
+    }
   };
 
   const handleSort = (column) => {
@@ -491,16 +564,16 @@ export default function CaseList({ onBack, userRole }) {
     );
   };
 
+  // Функция для получения части stage_template_id после первой точки
   const getAfterFirstDot = (stageTemplateId) => {
     if (!stageTemplateId) return 'Не указан';
-
+    
     const parts = stageTemplateId.split('.');
-
+    
     if (parts.length > 1) {
       return parts.slice(1).join('.');
     }
     
-
     return stageTemplateId;
   };
 
@@ -529,6 +602,7 @@ export default function CaseList({ onBack, userRole }) {
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
+  // Генерация номеров страниц для пагинации
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
@@ -552,275 +626,297 @@ export default function CaseList({ onBack, userRole }) {
   }
 
   return (
-    <Container>
-      <Title>Реестр дел</Title>
+    <>
+      <GlobalReset />
+      <Container>
+        <Title>Реестр дел</Title>
 
-      <Section>
-        <ActionBar>
-          <Button onClick={onBack}>← Назад к панели управления</Button>
-          <Button $primary onClick={loadCases}>🔄 Обновить данные</Button>
-        </ActionBar>
+        <Section>
+          <ActionBar>
+            <Button onClick={onBack}>Назад к панели управления</Button>
+            <Button $primary onClick={loadCases}>Обновить данные</Button>
+          </ActionBar>
 
-        {/* Поиск и фильтры */}
-        <SearchContainer>
-          <FilterGroup>
-            <FilterLabel>Поиск по названию</FilterLabel>
-            <SearchInput
-              type="text"
-              placeholder="Введите название дела..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-          </FilterGroup>
+          {/* Поиск и фильтры */}
+          <SearchContainer>
+            <FilterGroup>
+              <FilterLabel>Поиск по названию</FilterLabel>
+              <SearchInput
+                type="text"
+                placeholder="Введите название дела..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </FilterGroup>
 
-          <FilterGroup>
-            <FilterLabel>Статус дела</FilterLabel>
-            <Select 
-              value={statusFilter} 
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Все статусы</option>
-              <option value="active">Активные</option>
-              <option value="completed">Завершенные</option>
-              <option value="cancelled">Отмененные</option>
-            </Select>
-          </FilterGroup>
+            <FilterGroup>
+              <FilterLabel>Статус дела</FilterLabel>
+              <Select 
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">Все статусы</option>
+                <option value="active">Активные</option>
+                <option value="completed">Завершенные</option>
+                <option value="cancelled">Отмененные</option>
+              </Select>
+            </FilterGroup>
 
-          <FilterGroup>
-            <FilterLabel>Исполнитель</FilterLabel>
-            <Select 
-              value={executorFilter} 
-              onChange={(e) => setExecutorFilter(e.target.value)}
-            >
-              <option value="all">Все исполнители</option>
-              {allExecutors.map(executor => (
-                <option key={executor.login} value={executor.login}>
-                  {executor.full_name}
-                </option>
-              ))}
-            </Select>
-          </FilterGroup>
+            <FilterGroup>
+              <FilterLabel>Исполнитель</FilterLabel>
+              <Select 
+                value={executorFilter} 
+                onChange={(e) => setExecutorFilter(e.target.value)}
+              >
+                <option value="all">Все исполнители</option>
+                {allExecutors.map(executor => (
+                  <option key={executor.login} value={executor.login}>
+                    {executor.full_name}
+                  </option>
+                ))}
+              </Select>
+            </FilterGroup>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'end' }}>
-            <Button onClick={handleSearch}>
-              Применить фильтры
-            </Button>
+            <FilterGroup>
+              <FilterLabel>Статус дедлайна</FilterLabel>
+              <Select 
+                value={deadlineFilter} 
+                onChange={(e) => setDeadlineFilter(e.target.value)}
+              >
+                <option value="all">Все дедлайны</option>
+                <option value="overdue">Просроченные</option>
+                <option value="soon">Скоро просроченные</option>
+                <option value="safe">Без угрозы просрочки</option>
+              </Select>
+            </FilterGroup>
 
-            <Button onClick={() => {
-              setSearchTerm('');
-              setStatusFilter('all');
-              setExecutorFilter('all');
-              setCurrentPage(1);
-            }}>
-              Сбросить
-            </Button>
-          </div>
-        </SearchContainer>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'end' }}>
+              <Button onClick={handleSearch}>
+                Применить фильтры
+              </Button>
 
-        <TableContainer>
-          {cases.length === 0 && !loading ? (
-            <EmptyMessage>Дела не найдены. Измените параметры поиска или создайте новые дела.</EmptyMessage>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <tr>
-                    <TableHeaderCell onClick={() => handleSort('id')}>
-                      ID {getSortIcon('id')}
-                    </TableHeaderCell>
-                    <TableHeaderCell onClick={() => handleSort('name')}>
-                      Название дела {getSortIcon('name')}
-                    </TableHeaderCell>
-                    <TableHeaderCell>
-                      Текущий этап
-                    </TableHeaderCell>
-                    <TableHeaderCell>
-                      Исполнитель
-                    </TableHeaderCell>
-                    <TableHeaderCell>
-                      Дедлайн
-                    </TableHeaderCell>
-                    <TableHeaderCell>
-                      Шаблон
-                    </TableHeaderCell>
-                    <TableHeaderCell onClick={() => handleSort('status')}>
-                      Статус {getSortIcon('status')}
-                    </TableHeaderCell>
-                  </tr>
-                </TableHeader>
-                <tbody>
-                  {cases.map(caseItem => {
-                    const currentStage = getCurrentStage(caseItem);
-                    const templateName = caseTemplates[caseItem.case_template_id] || `Шаблон #${caseItem.case_template_id}`;
+              <Button onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('all');
+                setExecutorFilter('all');
+                setDeadlineFilter('all');
+                setCurrentPage(1);
+              }}>
+                Сбросить
+              </Button>
+            </div>
+          </SearchContainer>
+
+          {/* Таблица дел */}
+          <TableContainer>
+            {cases.length === 0 && !loading ? (
+              <EmptyMessage>Дела не найдены. Измените параметры поиска или создайте новые дела.</EmptyMessage>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <tr>
+                      <TableHeaderCell onClick={() => handleSort('name')}>
+                        Название дела {getSortIcon('name')}
+                      </TableHeaderCell>
+                      <TableHeaderCell>
+                        Текущий этап
+                      </TableHeaderCell>
+                      <TableHeaderCell>
+                        Исполнитель
+                      </TableHeaderCell>
+                      <TableHeaderCell>
+                        Дедлайн
+                      </TableHeaderCell>
+                      <TableHeaderCell onClick={() => handleSort('status')}>
+                        Статус {getSortIcon('status')}
+                      </TableHeaderCell>
+                    </tr>
+                  </TableHeader>
+                  <tbody>
+                    {cases.map(caseItem => {
+                      const currentStage = getCurrentStage(caseItem);
+                      const templateName = caseTemplates[caseItem.case_template_id] || `Шаблон #${caseItem.case_template_id}`;
+                      const deadlineStatus = getDeadlineStatus(currentStage?.deadline);
+                      
+                      return (
+                        <TableRow key={caseItem.id} onClick={() => setSelectedCase(caseItem)}>
+                          <TableCell>
+                            <div style={{ fontSize: '12px' }}>
+                              {caseItem.name || 'Без названия'}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                              {templateName}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div style={{ 
+                              fontSize: '11px', 
+                              fontWeight: 'bold',
+                              color: '#007bff',
+                              textAlign: 'center'
+                            }}>
+                              {getAfterFirstDot(caseItem.current_stage)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div style={{ fontSize: '11px' }}>
+                              {getExecutorFullName(currentStage?.executor)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                              {currentStage?.deadline ? formatDateTime(currentStage.deadline) : 'Не установлен'}
+                              {currentStage?.deadline && (
+                                <DeadlineBadge status={deadlineStatus}>
+                                  {getDeadlineStatusText(deadlineStatus)}
+                                </DeadlineBadge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={caseItem.status}>
+                              {caseItem.status === 'active' ? 'Активно' : 
+                              caseItem.status === 'completed' ? 'Завершено' : 'Отменено'}
+                            </StatusBadge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </tbody>
+                </Table>
+
+                {/* Пагинация */}
+                {totalPages > 1 && (
+                  <PaginationContainer>
+                    <PaginationInfo>
+                      Показано {cases.length} из {totalCount} дел
+                    </PaginationInfo>
                     
+                    <PaginationControls>
+                      <PageSizeSelect 
+                        value={pageSize} 
+                        onChange={(e) => handlePageSizeChange(e.target.value)}
+                      >
+                        <option value="8">8 на странице</option>
+                        <option value="16">16 на странице</option>
+                        <option value="24">24 на странице</option>
+                        <option value="32">32 на странице</option>
+                      </PageSizeSelect>
+
+                      <PageButton 
+                        onClick={() => handlePageChange(1)}
+                        disabled={currentPage === 1}
+                      >
+                        ⟪
+                      </PageButton>
+
+                      <PageButton 
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                      >
+                        ⟨
+                      </PageButton>
+
+                      {getPageNumbers().map(page => (
+                        <PageButton
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={currentPage === page ? 'active' : ''}
+                        >
+                          {page}
+                        </PageButton>
+                      ))}
+
+                      <PageButton 
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                      >
+                        ⟩
+                      </PageButton>
+
+                      <PageButton 
+                        onClick={() => handlePageChange(totalPages)}
+                        disabled={currentPage === totalPages}
+                      >
+                        ⟫
+                      </PageButton>
+                    </PaginationControls>
+
+                    <PaginationInfo>
+                      Страница {currentPage} из {totalPages}
+                    </PaginationInfo>
+                  </PaginationContainer>
+                )}
+              </>
+            )}
+          </TableContainer>
+        </Section>
+
+        {/* Модальное окно с деталями дела */}
+        {selectedCase && (
+          <Modal onClick={() => setSelectedCase(null)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <h3 style={{ margin: 0, color: '#2c3e50', fontSize: '16px' }}>Детали дела: {selectedCase.name}</h3>
+                <Button onClick={() => setSelectedCase(null)}>×</Button>
+              </div>
+
+              <div style={{ marginBottom: '15px' }}>
+                <p><strong>Статус:</strong> 
+                  <StatusBadge status={selectedCase.status} style={{ marginLeft: '6px' }}>
+                    {selectedCase.status === 'active' ? 'Активно' : 
+                    selectedCase.status === 'completed' ? 'Завершено' : 'Отменено'}
+                  </StatusBadge>
+                </p>
+                <p><strong>Создано:</strong> {formatDateTime(selectedCase.created_at)}</p>
+                <p><strong>Шаблон:</strong> {caseTemplates[selectedCase.case_template_id] || 'Загрузка...'}</p>
+                <p><strong>Текущий этап:</strong> {selectedCase.current_stage || 'Не указан'}</p>
+              </div>
+
+              {/* Дополнительная информация о деле */}
+              {selectedCase.stages && selectedCase.stages.length > 0 && (
+                <div>
+                  <h4 style={{ color: '#2c3e50', marginBottom: '10px', fontSize: '14px' }}>Этапы дела:</h4>
+                  {selectedCase.stages.map((stage, index) => {
+                    const stageDeadlineStatus = getDeadlineStatus(stage.deadline);
                     return (
-                      <TableRow key={caseItem.id} onClick={() => setSelectedCase(caseItem)}>
-                        <TableCell>
-                          <strong>#{caseItem.id}</strong>
-                        </TableCell>
-                        <TableCell>
-                          <div style={{ fontWeight: '600', fontSize: '14px' }}>
-                            {caseItem.name || 'Без названия'}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div style={{ 
-                            fontSize: '13px', 
-                            fontWeight: 'bold',
-                            color: '#007bff',
-                            textAlign: 'center'
-                          }}>
-                            {getAfterFirstDot(caseItem.current_stage)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div style={{ fontSize: '13px' }}>
-                            {getExecutorFullName(currentStage?.executor)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div style={{ fontSize: '13px' }}>
-                            {currentStage?.deadline ? formatDateTime(currentStage.deadline) : 'Не установлен'}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div style={{ fontSize: '13px', color: '#666' }}>
-                            {templateName}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={caseItem.status}>
-                            {caseItem.status === 'active' ? 'Активно' : 
-                             caseItem.status === 'completed' ? 'Завершено' : 'Отменено'}
+                      <div key={stage.id} style={{ 
+                        background: stage.stage_template_id === selectedCase.current_stage ? '#e3f2fd' : '#f8f9fa',
+                        padding: '10px', 
+                        margin: '4px 0', 
+                        borderRadius: '6px',
+                        borderLeft: stage.stage_template_id === selectedCase.current_stage ? '4px solid #007bff' : '4px solid #6c757d'
+                      }}>
+                        <p><strong>Этап {index + 1}:</strong> {stage.stage_template_id} {stage.stage_template_id === selectedCase.current_stage && '(Текущий)'}</p>
+                        <p><strong>Исполнитель:</strong> {getExecutorFullName(stage.executor)}</p>
+                        <p><strong>Дедлайн:</strong> {stage.deadline ? formatDateTime(stage.deadline) : 'Не установлен'}
+                          {stage.deadline && (
+                            <DeadlineBadge status={stageDeadlineStatus} style={{ marginLeft: '4px' }}>
+                              {getDeadlineStatusText(stageDeadlineStatus)}
+                            </DeadlineBadge>
+                          )}
+                        </p>
+                        <p><strong>Статус:</strong> 
+                          <StatusBadge status={stage.status} style={{ marginLeft: '6px' }}>
+                            {stage.status === 'pending' ? 'Ожидание' :
+                            stage.status === 'in_progress' ? 'В работе' :
+                            stage.status === 'completed' ? 'Завершен' : stage.status}
                           </StatusBadge>
-                        </TableCell>
-                      </TableRow>
+                        </p>
+                        {stage.completed_at && (
+                          <p><strong>Завершен:</strong> {formatDateTime(stage.completed_at)}</p>
+                        )}
+                      </div>
                     );
                   })}
-                </tbody>
-              </Table>
-
-              
-              {totalPages > 1 && (
-                <PaginationContainer>
-                  <PaginationInfo>
-                    Показано {cases.length} из {totalCount} дел
-                  </PaginationInfo>
-                  
-                  <PaginationControls>
-                    <PageSizeSelect 
-                      value={pageSize} 
-                      onChange={(e) => handlePageSizeChange(e.target.value)}
-                    >
-                      <option value="5">5 на странице</option>
-                      <option value="10">10 на странице</option>
-                      <option value="20">20 на странице</option>
-                      <option value="50">50 на странице</option>
-                    </PageSizeSelect>
-
-                    <PageButton 
-                      onClick={() => handlePageChange(1)}
-                      disabled={currentPage === 1}
-                    >
-                      ⟪
-                    </PageButton>
-
-                    <PageButton 
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      ⟨
-                    </PageButton>
-
-                    {getPageNumbers().map(page => (
-                      <PageButton
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={currentPage === page ? 'active' : ''}
-                      >
-                        {page}
-                      </PageButton>
-                    ))}
-
-                    <PageButton 
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      ⟩
-                    </PageButton>
-
-                    <PageButton 
-                      onClick={() => handlePageChange(totalPages)}
-                      disabled={currentPage === totalPages}
-                    >
-                      ⟫
-                    </PageButton>
-                  </PaginationControls>
-
-                  <PaginationInfo>
-                    Страница {currentPage} из {totalPages}
-                  </PaginationInfo>
-                </PaginationContainer>
+                </div>
               )}
-            </>
-          )}
-        </TableContainer>
-      </Section>
-
-      {/* Модальное окно с деталями дела */}
-      {selectedCase && (
-        <Modal onClick={() => setSelectedCase(null)}>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-              <h3 style={{ margin: 0, color: '#2c3e50' }}>Детали дела: {selectedCase.name}</h3>
-              <Button onClick={() => setSelectedCase(null)}>×</Button>
-            </div>
-
-            <div style={{ marginBottom: '25px' }}>
-              <p><strong>ID:</strong> {selectedCase.id}</p>
-              <p><strong>Статус:</strong> 
-                <StatusBadge status={selectedCase.status} style={{ marginLeft: '10px' }}>
-                  {selectedCase.status === 'active' ? 'Активно' : 
-                   selectedCase.status === 'completed' ? 'Завершено' : 'Отменено'}
-                </StatusBadge>
-              </p>
-              <p><strong>Создано:</strong> {formatDateTime(selectedCase.created_at)}</p>
-              <p><strong>Шаблон:</strong> {caseTemplates[selectedCase.case_template_id] || 'Загрузка...'}</p>
-              <p><strong>Текущий этап:</strong> {selectedCase.current_stage || 'Не указан'}</p>
-            </div>
-
-            {/* Дополнительная информация о деле */}
-            {selectedCase.stages && selectedCase.stages.length > 0 && (
-              <div>
-                <h4 style={{ color: '#2c3e50', marginBottom: '15px' }}>Этапы дела:</h4>
-                {selectedCase.stages.map((stage, index) => (
-                  <div key={stage.id} style={{ 
-                    background: stage.stage_template_id === selectedCase.current_stage ? '#e3f2fd' : '#f8f9fa',
-                    padding: '15px', 
-                    margin: '8px 0', 
-                    borderRadius: '6px',
-                    borderLeft: stage.stage_template_id === selectedCase.current_stage ? '4px solid #007bff' : '4px solid #6c757d'
-                  }}>
-                    <p><strong>Этап {index + 1}:</strong> {stage.stage_template_id} {stage.stage_template_id === selectedCase.current_stage && '(Текущий)'}</p>
-                    <p><strong>Исполнитель:</strong> {getExecutorFullName(stage.executor)}</p>
-                    <p><strong>Статус:</strong> 
-                      <StatusBadge status={stage.status} style={{ marginLeft: '10px' }}>
-                        {stage.status === 'pending' ? 'Ожидание' :
-                         stage.status === 'in_progress' ? 'В работе' :
-                         stage.status === 'completed' ? 'Завершен' : stage.status}
-                      </StatusBadge>
-                    </p>
-                    {stage.completed_at && (
-                      <p><strong>Завершен:</strong> {formatDateTime(stage.completed_at)}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </ModalContent>
-        </Modal>
-      )}
-    </Container>
+            </ModalContent>
+          </Modal>
+        )}
+      </Container>
+    </>
   );
 }

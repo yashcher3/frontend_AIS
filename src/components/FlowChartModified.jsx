@@ -46,11 +46,8 @@ const CustomNodeModified = React.memo(({ data, id }) => {
 
   const handleSettingsClick = (e) => {
     e.stopPropagation();
-    console.log('Settings button clicked for node:', id);
     if (data.onOpenAttributePanel) {
       data.onOpenAttributePanel(id);
-    } else {
-      console.error('onOpenAttributePanel is not defined in data');
     }
   };
 
@@ -99,8 +96,6 @@ const CustomNodeModified = React.memo(({ data, id }) => {
         />
       </div>
       
-
-      
       <div style={{ marginBottom: '10px' }}>
         <label>Описание:</label>
         <textarea 
@@ -119,7 +114,6 @@ const CustomNodeModified = React.memo(({ data, id }) => {
         />
       </div>
 
-      {/* Кнопка для настройки названий полей */}
       <div style={{ marginTop: '10px' }}>
         <button 
           onClick={handleSettingsClick}
@@ -137,7 +131,6 @@ const CustomNodeModified = React.memo(({ data, id }) => {
         </button>
       </div>
 
-      {/* Conditions Section */}
       {data.condition && (
         <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
           <strong>Условие ветвления:</strong>
@@ -182,7 +175,6 @@ const CustomNodeModified = React.memo(({ data, id }) => {
         </div>
       )}
       
-      {/* External Add Condition Button Container */}
       <div 
         style={{ 
           position: 'absolute', 
@@ -282,12 +274,8 @@ const AttributePanel = React.memo(({
   const [fileFields, setFileFields] = useState([]);
   const [textFields, setTextFields] = useState([]);
 
-  
   useEffect(() => {
     if (isOpen && currentNode) {
-      console.log('Initializing attributes for node:', currentNode.id);
-      
-      
       const existingFileFields = currentNode.data.file_fields || 0;
       const existingTextFields = currentNode.data.text_fields || 0;
       
@@ -355,7 +343,6 @@ const AttributePanel = React.memo(({
     if (currentNode) {
       const attributes = [];
       
-      
       fileFields.forEach((field, index) => {
         attributes.push({
           field_type: 'file_field',
@@ -364,7 +351,6 @@ const AttributePanel = React.memo(({
         });
       });
       
-      // Добавляем текстовые поля
       textFields.forEach((field, index) => {
         attributes.push({
           field_type: 'text_field',
@@ -373,13 +359,11 @@ const AttributePanel = React.memo(({
         });
       });
 
-      // Обновляем данные узла
       onUpdateNodeData(currentNode.id, {
         file_fields: fileFields.length,
         text_fields: textFields.length
       });
 
-      // Сохраняем атрибуты
       await onSaveAttributes(currentNode.id, attributes);
       onClose();
     }
@@ -426,7 +410,6 @@ const AttributePanel = React.memo(({
         <p><strong>Всего полей: {fileFields.length + textFields.length}</strong></p>
       </div>
 
-      
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <button 
           onClick={handleAddFileField}
@@ -458,7 +441,6 @@ const AttributePanel = React.memo(({
         </button>
       </div>
 
-      
       <div style={{ marginBottom: '30px' }}>
         <h4>Файловые поля ({fileFields.length})</h4>
         {fileFields.map((field, index) => (
@@ -501,7 +483,6 @@ const AttributePanel = React.memo(({
         )}
       </div>
 
-      {/* Текстовые поля */}
       <div style={{ marginBottom: '30px' }}>
         <h4>Текстовые поля ({textFields.length})</h4>
         {textFields.map((field, index) => (
@@ -565,7 +546,70 @@ const AttributePanel = React.memo(({
   );
 });
 
-const FlowChartModified = () => {
+const ExitConfirmationModal = ({ isOpen, onClose, onConfirm }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 2000
+    }}>
+      <div style={{
+        background: 'white',
+        padding: '25px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+        maxWidth: '400px',
+        width: '90%'
+      }}>
+        <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>Подтверждение выхода</h3>
+        <p style={{ margin: '0 0 20px 0', lineHeight: '1.4', color: '#666' }}>
+          При выходе в главное меню несохраненные шаблоны удаляются
+        </p>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <button 
+            onClick={onClose}
+            style={{ 
+              background: '#6c757d', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              padding: '8px 16px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Продолжить
+          </button>
+          <button 
+            onClick={onConfirm}
+            style={{ 
+              background: '#fd7e14', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              padding: '8px 16px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Выйти
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FlowChartModified = ({ onExportSuccess, onExit }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [rootNodeId, setRootNodeId] = useState(null);
@@ -574,6 +618,7 @@ const FlowChartModified = () => {
     currentNode: null
   });
   const [attributeTemplates, setAttributeTemplates] = useState({});
+  const [showExitModal, setShowExitModal] = useState(false);
 
   const nodesRef = useRef(nodes);
   useEffect(() => {
@@ -584,7 +629,6 @@ const FlowChartModified = () => {
     customModified: CustomNodeModified,
   }), []);
 
-  // Функция для получения детей узла
   const getNodeChildren = useCallback((nodeId) => {
     return edges
       .filter(edge => edge.source === nodeId)
@@ -592,14 +636,12 @@ const FlowChartModified = () => {
       .filter(Boolean);
   }, [edges, nodes]);
 
-
   const isTokenExpired = (token) => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const exp = payload.exp * 1000;
       return Date.now() >= exp;
     } catch (error) {
-      console.error('Error checking token expiration:', error);
       return true;
     }
   };
@@ -631,31 +673,22 @@ const FlowChartModified = () => {
     );
   }, [setNodes]);
 
-  // Функция для открытия панели атрибутов
   const handleOpenAttributePanel = useCallback((nodeId) => {
-    console.log('handleOpenAttributePanel called with nodeId:', nodeId);
     const node = nodesRef.current.find(n => n.id === nodeId);
-    console.log('Found node:', node);
-    
     if (node) {
       setAttributePanel({
         isOpen: true,
         currentNode: node
       });
-      console.log('Attribute panel state set to open');
-    } else {
-      console.error('Node not found! Available nodes:', nodesRef.current.map(n => n.id));
     }
   }, []);
 
-  // Создаем стабильные ссылки на функции для передачи в узлы
   const stableNodeData = useMemo(() => ({
     onUpdateConditions: updateNodeConditions,
     onUpdateNodeData: updateNodeData,
     onOpenAttributePanel: handleOpenAttributePanel,
   }), [updateNodeConditions, updateNodeData, handleOpenAttributePanel]);
 
-  // Функция для сохранения атрибутов
   const handleSaveAttributes = useCallback(async (nodeId, attributes) => {
     let token = localStorage.getItem('access_token');
     
@@ -678,7 +711,6 @@ const FlowChartModified = () => {
           return;
         }
       } catch (error) {
-        console.error('Token refresh failed:', error);
         handleLogout();
         alert('Ошибка обновления сессии. Пожалуйста, войдите снова.');
         return;
@@ -686,47 +718,42 @@ const FlowChartModified = () => {
     }
 
     try {
-    const stageNumber = nodesRef.current.find(n => n.id === nodeId)?.data.numberDisplay;
-    if (!stageNumber) return;
+      const stageNumber = nodesRef.current.find(n => n.id === nodeId)?.data.numberDisplay;
+      if (!stageNumber) return;
 
-    const templates = attributes.map(attr => ({
-      field_type: attr.field_type,
-      field_index: attr.field_index,
-      label: attr.label,
-      stage_template_id: stageNumber 
-    }));
+      const templates = attributes.map(attr => ({
+        field_type: attr.field_type,
+        field_index: attr.field_index,
+        label: attr.label,
+        stage_template_id: stageNumber 
+      }));
 
-    console.log('Sending templates:', templates); 
+      const response = await fetch(`http://localhost:8000/stage_templates/${stageNumber}/attribute_templates/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(templates)
+      });
 
-    const response = await fetch(`http://localhost:8000/stage_templates/${stageNumber}/attribute_templates/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(templates)
-    });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Server response:', errorText);
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const savedTemplates = await response.json();
+      setAttributeTemplates(prev => ({
+        ...prev,
+        [stageNumber]: savedTemplates
+      }));
+      alert('Названия полей успешно сохранены!');
+      
+    } catch (error) {
+      alert(`Ошибка при сохранении названий полей: ${error.message}`);
     }
+  }, []);
 
-    const savedTemplates = await response.json();
-    setAttributeTemplates(prev => ({
-      ...prev,
-      [stageNumber]: savedTemplates
-    }));
-    alert('Названия полей успешно сохранены!');
-    
-  } catch (error) {
-    console.error('Error saving attributes:', error);
-    alert(`Ошибка при сохранении названий полей: ${error.message}`);
-  }
-}, []);
-
-  // Функция для загрузки шаблонов атрибутов
   const loadAttributeTemplates = useCallback(async (stageId) => {
     let token = localStorage.getItem('access_token');
     
@@ -751,19 +778,12 @@ const FlowChartModified = () => {
     return [];
   }, []);
 
-  // Функция для экспорта данных в API
   const exportToAPI = useCallback(async () => {
     let token = localStorage.getItem('access_token');
     const username = localStorage.getItem('username');
     const role = localStorage.getItem('user_role');
-    
-    console.log('=== Frontend Debug ===');
-    console.log('Token:', token ? `${token.substring(0, 20)}...` : 'missing');
-    console.log('Username:', username);
-    console.log('Role:', role);
 
     if (token && isTokenExpired(token)) {
-      console.log('Token expired, attempting refresh...');
       try {
         const refreshResponse = await fetch('http://localhost:8000/token/refresh', {
           method: 'POST',
@@ -776,14 +796,12 @@ const FlowChartModified = () => {
           const newTokenData = await refreshResponse.json();
           token = newTokenData.access_token;
           localStorage.setItem('access_token', token);
-          console.log('Token refreshed successfully');
         } else {
           handleLogout();
           alert('Сессия истекла. Пожалуйста, войдите снова.');
           return;
         }
       } catch (error) {
-        console.error('Token refresh failed:', error);
         handleLogout();
         alert('Ошибка обновления сессии. Пожалуйста, войдите снова.');
         return;
@@ -802,7 +820,6 @@ const FlowChartModified = () => {
       return;
     }
 
-    // Загружаем шаблоны атрибутов для всех этапов
     const stagesWithTemplates = [];
     for (const node of numberedNodes) {
       const stageId = node.data.numberDisplay;
@@ -824,7 +841,6 @@ const FlowChartModified = () => {
       });
     }
 
-    // Проверяем заполненность основных полей
     const incompleteNodes = stagesWithTemplates.filter(stage => {
       return !stage.name_stage || !stage.desc || !stage.duration;
     });
@@ -835,7 +851,6 @@ const FlowChartModified = () => {
       return;
     }
 
-    // Проверяем условия ветвления
     const nodesWithMissingConditions = [];
     numberedNodes.forEach(node => {
       const children = getNodeChildren(node.id);
@@ -873,8 +888,6 @@ const FlowChartModified = () => {
       stages: stagesWithTemplates
     };
 
-    console.log('Отправляемые данные:', exportData);
-
     try {
       const response = await fetch('http://localhost:8000/case_templates/export/', {
         method: 'POST',
@@ -889,18 +902,17 @@ const FlowChartModified = () => {
       if (response.ok) {
         const result = await response.json();
         alert(`Данные успешно экспортированы! ID дела: ${result.id}`);
-        console.log('Ответ сервера:', result);
+        if (onExportSuccess) {
+          onExportSuccess();
+        }
       } else {
         const error = await response.json();
         alert(`Ошибка при экспорте: ${error.detail}`);
-        console.error('Ошибка сервера:', error);
       }
     } catch (error) {
-      console.error('Ошибка:', error);
       alert('Ошибка при отправке данных на сервер. Проверьте, запущен ли сервер.');
     }
-  }, [nodes, edges, getNodeChildren, attributeTemplates, loadAttributeTemplates]);
-
+  }, [nodes, edges, getNodeChildren, attributeTemplates, loadAttributeTemplates, onExportSuccess]);
 
   const updateBlockNumbers = useCallback(() => {
     if (nodes.length === 0) {
@@ -1028,6 +1040,20 @@ const FlowChartModified = () => {
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes, stableNodeData]);
 
+  const handleExitClick = () => {
+    setShowExitModal(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowExitModal(false);
+    if (onExit) {
+      onExit();
+    }
+  };
+
+  const handleCancelExit = () => {
+    setShowExitModal(false);
+  };
 
   const nodesWithEdges = useMemo(() => 
     nodes.map(node => ({
@@ -1076,6 +1102,24 @@ const FlowChartModified = () => {
       >
         Сохранить шаблон дела
       </button>
+
+      <button 
+        onClick={handleExitClick}
+        style={{ 
+          position: 'absolute', 
+          top: '10px', 
+          left: '363px', 
+          zIndex: 10,
+          background: '#fd7e14',
+          color: 'white',
+          border: 'none',
+          padding: '10px 15px',
+          borderRadius: '5px',
+          cursor: 'pointer'
+        }}
+      >
+        Выйти
+      </button>
       
       <ReactFlow
         nodes={nodesWithEdges}
@@ -1099,6 +1143,12 @@ const FlowChartModified = () => {
         currentNode={attributePanel.currentNode}
         onSaveAttributes={handleSaveAttributes}
         onUpdateNodeData={updateNodeData}
+      />
+
+      <ExitConfirmationModal
+        isOpen={showExitModal}
+        onClose={handleCancelExit}
+        onConfirm={handleConfirmExit}
       />
     </div>
   );

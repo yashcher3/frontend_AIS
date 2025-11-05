@@ -269,6 +269,34 @@ const ProgressFill = styled.div`
   transition: width 0.3s ease;
 `;
 
+const StageDescription = styled.div`
+  margin-bottom: 15px;
+  color: #666;
+  font-style: ${props => props.$empty ? 'italic' : 'normal'};
+  opacity: ${props => props.$empty ? 0.7 : 1};
+  line-height: 1.5;
+`;
+
+const StageInfoSection = styled.div`
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border-left: 4px solid #007bff;
+`;
+
+const CaseName = styled.div`
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 5px;
+`;
+
+const CaseId = styled.div`
+  font-size: 12px;
+  color: #666;
+`;
+
 export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   const [stages, setStages] = useState([]);
   const [filteredStages, setFilteredStages] = useState([]);
@@ -283,6 +311,8 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isEditing, setIsEditing] = useState(false);
   const [initialFormData, setInitialFormData] = useState({});
+  const [stageDescription, setStageDescription] = useState('');
+  const [caseName, setCaseName] = useState('');
 
   useEffect(() => {
     loadStages();
@@ -293,64 +323,117 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   }, [stages, searchTerm]);
 
   const loadStages = async () => {
-  setLoading(true);
-  try {
-    const token = localStorage.getItem('access_token');
-    const response = await fetch('http://localhost:8000/executor/stages/', {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('http://localhost:8000/executor/stages/', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const stagesData = await response.json();
+        setStages(stagesData);
+      } else {
+        throw new Error('Ошибка загрузки этапов');
       }
-    });
-
-    if (response.ok) {
-      const stagesData = await response.json();
-
-      setStages(stagesData);
-    } else {
-      throw new Error('Ошибка загрузки этапов');
+    } catch (error) {
+      console.error('Error loading stages:', error);
+      setMessage({ type: 'error', text: 'Ошибка при загрузке задач' });
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error loading stages:', error);
-    setMessage({ type: 'error', text: 'Ошибка при загрузке задач' });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const filterStages = () => {
     let filtered = stages;
 
     if (searchTerm) {
       filtered = filtered.filter(stage => 
-        stage.case?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        stage.case_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     setFilteredStages(filtered);
   };
 
+  // Функция для форматирования номера этапа (оставляет только часть после первой точки)
+  const formatStageNumber = (stageTemplateId) => {
+    if (!stageTemplateId) return '';
+    const parts = stageTemplateId.split('.');
+    return parts.length > 1 ? parts.slice(1).join('.') : stageTemplateId;
+  };
+
   const loadStageData = async (stage) => {
-  try {
-    const token = localStorage.getItem('access_token');
+    try {
+      const token = localStorage.getItem('access_token');
 
-    const templatesResponse = await fetch(`http://localhost:8000/stage_templates/${stage.stage_template_id}/attribute_templates/`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+      // Загружаем шаблоны атрибутов
+      const templatesResponse = await fetch(`http://localhost:8000/stage_templates/${stage.stage_template_id}/attribute_templates/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Загружаем существующие атрибуты
+      const attributesResponse = await fetch(`http://localhost:8000/stages/${stage.id}/attributes/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      let templates = [];
+      let existingAttrs = [];
+
+      if (templatesResponse.ok) {
+        templates = await templatesResponse.json();
       }
-    });
 
-    const attributesResponse = await fetch(`http://localhost:8000/stages/${stage.id}/attributes/`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+      if (attributesResponse.ok) {
+        existingAttrs = await attributesResponse.json();
       }
-    });
-
-    if (templatesResponse.ok && attributesResponse.ok) {
-      const templates = await templatesResponse.json();
-      const existingAttrs = await attributesResponse.json();
 
       setAttributeTemplates(templates);
       setExistingAttributes(existingAttrs);
+
+      // Загружаем информацию о шаблоне этапа для получения описания
+      try {
+        const stageTemplateResponse = await fetch(`http://localhost:8000/stage_templates/${stage.stage_template_id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (stageTemplateResponse.ok) {
+          const stageTemplate = await stageTemplateResponse.json();
+          setStageDescription(stageTemplate.desc || 'Описание отсутствует');
+        } else {
+          setStageDescription('Описание отсутствует');
+        }
+      } catch (error) {
+        console.error('Error loading stage template:', error);
+        setStageDescription('Описание отсутствует');
+      }
+
+      // Загружаем информацию о деле для получения названия
+      try {
+        const caseResponse = await fetch(`http://localhost:8000/cases/${stage.case_id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (caseResponse.ok) {
+          const caseData = await caseResponse.json();
+          setCaseName(caseData.name || `Дело #${stage.case_id}`);
+        } else {
+          setCaseName(`Дело #${stage.case_id}`);
+        }
+      } catch (error) {
+        console.error('Error loading case:', error);
+        setCaseName(`Дело #${stage.case_id}`);
+      }
 
       // Инициализируем formData с существующими значениями
       const initialFormData = {};
@@ -373,22 +456,25 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
       
       const editableStatuses = ['in_progress', 'rework'];
       setIsEditing(editableStatuses.includes(stage.status));
+    } catch (error) {
+      console.error('Error loading stage data:', error);
+      setMessage({ type: 'error', text: 'Ошибка загрузки данных этапа' });
+      setStageDescription('Не удалось загрузить описание');
+      setCaseName(`Дело #${stage.case_id}`);
     }
-  } catch (error) {
-    console.error('Error loading stage data:', error);
-    setMessage({ type: 'error', text: 'Ошибка загрузки данных этапа' });
-  }
-};
+  };
 
   const handleStageClick = async (stage) => {
-  setSelectedStage(stage);
-  setMessage({ type: '', text: '' });
+    setSelectedStage(stage);
+    setMessage({ type: '', text: '' });
+    setStageDescription(''); // Сбрасываем описание перед загрузкой нового
+    setCaseName(''); // Сбрасываем название дела перед загрузкой нового
 
-  const editableStatuses = ['in_progress', 'rework'];
-  setIsEditing(editableStatuses.includes(stage.status));
-  
-  await loadStageData(stage);
-};
+    const editableStatuses = ['in_progress', 'rework'];
+    setIsEditing(editableStatuses.includes(stage.status));
+    
+    await loadStageData(stage);
+  };
 
   const handleInputChange = (templateId, field, value) => {
     setFormData(prev => ({
@@ -435,39 +521,39 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   };
 
   const handleFileDelete = async (templateId) => {
-  const attributeData = formData[templateId];
-  if (!attributeData.user_file_path) return;
+    const attributeData = formData[templateId];
+    if (!attributeData?.user_file_path) return;
 
-  try {
-    const token = localStorage.getItem('access_token');
+    try {
+      const token = localStorage.getItem('access_token');
 
-    if (attributeData.attribute_id) {
-      const deleteResponse = await fetch(`http://localhost:8000/attributes/${attributeData.attribute_id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      if (attributeData.attribute_id) {
+        const deleteResponse = await fetch(`http://localhost:8000/attributes/${attributeData.attribute_id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!deleteResponse.ok) {
+          const errorData = await deleteResponse.json();
+          throw new Error(errorData.detail || 'Ошибка удаления файла');
         }
-      });
-
-      if (!deleteResponse.ok) {
-        const errorData = await deleteResponse.json();
-        throw new Error(errorData.detail || 'Ошибка удаления файла');
       }
-    }
 
-    handleInputChange(templateId, 'user_file_path', '');
-    
-    setMessage({ type: 'success', text: 'Файл удален' });
-  } catch (error) {
-    console.error('Error deleting file:', error);
-    setMessage({ type: 'error', text: error.message });
-  }
-};
+      handleInputChange(templateId, 'user_file_path', '');
+      
+      setMessage({ type: 'success', text: 'Файл удален' });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      setMessage({ type: 'error', text: error.message });
+    }
+  };
+
   const validateForm = () => {
- 
     for (const template of attributeTemplates) {
       const fieldData = formData[template.id];
-      if (!fieldData.user_text && !fieldData.user_file_path) {
+      if (!fieldData || (!fieldData.user_text && !fieldData.user_file_path)) {
         setMessage({ type: 'error', text: `Заполните обязательное поле: ${template.label}` });
         return false;
       }
@@ -478,78 +564,49 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
   const isFormValid = () => {
     return attributeTemplates.every(template => {
       const fieldData = formData[template.id];
-      return fieldData.user_text || fieldData.user_file_path;
+      return fieldData && (fieldData.user_text || fieldData.user_file_path);
     });
   };
 
   const handleSubmit = async () => {
-  if (!validateForm()) {
-    return;
-  }
-
-  setSubmitting(true);
-  try {
-    const token = localStorage.getItem('access_token');
-
-    const attributesData = Object.values(formData).map(attr => ({
-      attribute_template_id: attr.attribute_template_id,
-      user_text: attr.user_text || null,
-      user_file_path: attr.user_file_path || null
-    }));
-
-    const attributesResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/attributes/batch/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(attributesData)
-    });
-
-    if (!attributesResponse.ok) {
-      throw new Error('Ошибка сохранения данных');
+    if (!validateForm()) {
+      return;
     }
 
-    if (selectedStage.status === 'rework') {
-      const reworkResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/rework-submit/`, {
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('access_token');
+
+      const attributesData = Object.values(formData).map(attr => ({
+        attribute_template_id: attr.attribute_template_id,
+        user_text: attr.user_text || null,
+        user_file_path: attr.user_file_path || null
+      }));
+
+      const attributesResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/attributes/batch/`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(attributesData)
       });
 
-      if (reworkResponse.ok) {
-        const result = await reworkResponse.json();
-        setMessage({ type: 'success', text: 'Исправления отправлены на проверку руководителю' });
-        
-        setTimeout(() => {
-          setSelectedStage(null);
-          setFormData({});
-          setExistingAttributes([]);
-          loadStages();
-        }, 2000);
-      } else {
-        const errorData = await reworkResponse.json();
-        throw new Error(errorData.detail || 'Ошибка отправки исправлений');
+      if (!attributesResponse.ok) {
+        throw new Error('Ошибка сохранения данных');
       }
-    } else {
 
-      const completeResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/complete/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (completeResponse.ok) {
-        const result = await completeResponse.json();
-
-        let successMessage = 'Данные успешно сохранены! ';
-        if (selectedStage.closing_rule === 'executor_closing') {
-          successMessage += 'Этап завершен.';
-          if (result.case_status === 'completed') {
-            successMessage += ' Дело завершено.';
+      if (selectedStage.status === 'rework') {
+        const reworkResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/rework-submit/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
+        });
+
+        if (reworkResponse.ok) {
+          const result = await reworkResponse.json();
+          setMessage({ type: 'success', text: 'Исправления отправлены на проверку руководителю' });
           
           setTimeout(() => {
             setSelectedStage(null);
@@ -558,39 +615,67 @@ export default function ExecutorTasks({ onBack, userRole, currentUser }) {
             loadStages();
           }, 2000);
         } else {
-          successMessage += ' Этап отправлен на проверку руководителю.';
-          
-          const updatedStage = {
-            ...selectedStage,
-            status: 'waiting_approval'
-          };
-          setSelectedStage(updatedStage);
-          setIsEditing(false);
-          
-          loadStages();
+          const errorData = await reworkResponse.json();
+          throw new Error(errorData.detail || 'Ошибка отправки исправлений');
         }
-
-        setMessage({ type: 'success', text: successMessage });
-
       } else {
-        const errorData = await completeResponse.json();
-        throw new Error(errorData.detail || 'Ошибка завершения этапа');
+        const completeResponse = await fetch(`http://localhost:8000/stages/${selectedStage.id}/complete/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (completeResponse.ok) {
+          const result = await completeResponse.json();
+
+          let successMessage = 'Данные успешно сохранены! ';
+          if (selectedStage.closing_rule === 'executor_closing') {
+            successMessage += 'Этап завершен.';
+            if (result.case_status === 'completed') {
+              successMessage += ' Дело завершено.';
+            }
+            
+            setTimeout(() => {
+              setSelectedStage(null);
+              setFormData({});
+              setExistingAttributes([]);
+              loadStages();
+            }, 2000);
+          } else {
+            successMessage += ' Этап отправлен на проверку руководителю.';
+            
+            const updatedStage = {
+              ...selectedStage,
+              status: 'waiting_approval'
+            };
+            setSelectedStage(updatedStage);
+            setIsEditing(false);
+            
+            loadStages();
+          }
+
+          setMessage({ type: 'success', text: successMessage });
+
+        } else {
+          const errorData = await completeResponse.json();
+          throw new Error(errorData.detail || 'Ошибка завершения этапа');
+        }
       }
+
+    } catch (error) {
+      console.error('Error submitting data:', error);
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setSubmitting(false);
     }
+  };
 
-  } catch (error) {
-    console.error('Error submitting data:', error);
-    setMessage({ type: 'error', text: error.message });
-  } finally {
-    setSubmitting(false);
-  }
-};
-
-const handleCancelEdit = () => {
-  setIsEditing(false);
-  setFormData(initialFormData);
-  setMessage({ type: '', text: '' });
-};
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setFormData(initialFormData);
+    setMessage({ type: '', text: '' });
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -599,15 +684,15 @@ const handleCancelEdit = () => {
   };
 
   const getStatusText = (status) => {
-  switch(status) {
-    case 'in_progress': return 'В работе';
-    case 'completed': return 'Завершен';
-    case 'waiting_approval': return 'Ожидает проверки';
-    case 'rework': return 'На доработке';
-    case 'pending': return 'Ожидание';
-    default: return status;
-  }
-};
+    switch(status) {
+      case 'in_progress': return 'В работе';
+      case 'completed': return 'Завершен';
+      case 'waiting_approval': return 'Ожидает проверки';
+      case 'rework': return 'На доработке';
+      case 'pending': return 'Ожидание';
+      default: return status;
+    }
+  };
 
   const getFileNameFromPath = (filePath) => {
     if (!filePath) return '';
@@ -615,15 +700,17 @@ const handleCancelEdit = () => {
   };
 
   const handleEdit = () => {
-  setIsEditing(true);
-};
+    setIsEditing(true);
+  };
 
   const getFormProgress = () => {
-    if (attributeTemplates.length === 0) return 0;
+    if (!attributeTemplates || attributeTemplates.length === 0) return 0;
+    
     const filledFields = attributeTemplates.filter(template => {
       const fieldData = formData[template.id];
-      return fieldData.user_text || fieldData.user_file_path;
+      return fieldData && (fieldData.user_text || fieldData.user_file_path);
     }).length;
+    
     return (filledFields / attributeTemplates.length) * 100;
   };
 
@@ -671,7 +758,7 @@ const handleCancelEdit = () => {
             <Table>
               <TableHeader>
                 <tr>
-                  <TableHeaderCell>Дело</TableHeaderCell>
+                  <TableHeaderCell>Название дела</TableHeaderCell> {/* Изменено с "Дело" на "Название дела" */}
                   <TableHeaderCell>Этап</TableHeaderCell>
                   <TableHeaderCell>Дедлайн</TableHeaderCell>
                   <TableHeaderCell>Статус</TableHeaderCell>
@@ -682,16 +769,14 @@ const handleCancelEdit = () => {
                 {filteredStages.map(stage => (
                   <TableRow key={stage.id} onClick={() => handleStageClick(stage)}>
                     <TableCell>
-                      <div style={{ fontWeight: '600' }}>
+                      <CaseName>
                         {stage.case_name || `Дело #${stage.case_id}`}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                        ID: {stage.case_id}
-                      </div>
+                      </CaseName>
+                      {/* Убрал блок с CaseId */}
                     </TableCell>
                     <TableCell>
-                      <div style={{ fontSize: '13px' }}>
-                        {stage.stage_template_id}
+                      <div style={{ fontSize: '13px', fontWeight: 'bold' }}>
+                        Этап {formatStageNumber(stage.stage_template_id)}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -719,13 +804,12 @@ const handleCancelEdit = () => {
         </TableContainer>
       </Section>
 
-
       {selectedStage && (
         <Modal onClick={() => !submitting && setSelectedStage(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
               <h3 style={{ margin: 0 }}>
-                Заполнение этапа: {selectedStage.stage_template_id}
+                Заполнение этапа: {formatStageNumber(selectedStage.stage_template_id)}
               </h3>
               <Button 
                 onClick={() => setSelectedStage(null)} 
@@ -735,15 +819,27 @@ const handleCancelEdit = () => {
               </Button>
             </div>
 
+            {/* Блок с информацией о деле */}
+            <StageInfoSection>
+              <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>Информация о деле:</h4>
+              <CaseName>{caseName || 'Загрузка...'}</CaseName>
+            </StageInfoSection>
+
+            {/* Блок с описанием шаблона этапа */}
+            <StageInfoSection>
+              <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>Описание этапа:</h4>
+              <StageDescription $empty={!stageDescription || stageDescription === 'Описание отсутствует'}>
+                {stageDescription || 'Загрузка описания...'}
+              </StageDescription>
+            </StageInfoSection>
+
             <div style={{ marginBottom: '20px' }}>
-              <p><strong>Дело:</strong> {selectedStage.case_name || `Дело #${selectedStage.case_id}`}</p>
               <p><strong>Дедлайн:</strong> {formatDate(selectedStage.deadline)}</p>
               <p><strong>Правило завершения:</strong> {
                 selectedStage.closing_rule === 'executor_closing' 
                   ? 'Вы можете завершить этот этап' 
                   : 'После заполнения этап отправится на проверку руководителю'
               }</p>
-              
               
               <div style={{ marginTop: '15px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
@@ -764,192 +860,185 @@ const handleCancelEdit = () => {
                 <ErrorMessage>{message.text}</ErrorMessage>
             )}
 
+            {attributeTemplates && attributeTemplates.map(template => {
+              const fieldData = formData[template.id];
+              const isFieldFilled = fieldData && (fieldData.user_text || fieldData.user_file_path);
 
-            {attributeTemplates.map(template => {
-  const fieldData = formData[template.id];
-  const isFieldFilled = fieldData.user_text || fieldData.user_file_path;
+              if (!isEditing && selectedStage?.status === 'waiting_approval') {
+                return (
+                  <FieldContainer key={template.id}>
+                    <Label>
+                      {template.label}
+                      <RequiredStar>*</RequiredStar>
+                    </Label>
+                    
+                    {fieldData?.user_text ? (
+                      <div style={{ 
+                        padding: '10px', 
+                        background: '#f8f9fa', 
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        marginBottom: '10px'
+                      }}>
+                        {fieldData.user_text}
+                      </div>
+                    ) : fieldData?.user_file_path ? (
+                      <FileInfo>
+                        <span>Прикрепленный файл: {getFileNameFromPath(fieldData.user_file_path)}</span> {/* Убрал смайлик */}
+                      </FileInfo>
+                    ) : (
+                      <div style={{ color: '#6c757d', fontStyle: 'italic' }}>
+                        Не заполнено
+                      </div>
+                    )}
+                  </FieldContainer>
+                );
+              }
 
+              return (
+                <FieldContainer key={template.id}>
+                  <Label>
+                    {template.label}
+                    <RequiredStar>*</RequiredStar>
+                  </Label>
 
-  if (!isEditing && selectedStage?.status === 'waiting_approval') {
-    return (
-      <FieldContainer key={template.id}>
-        <Label>
-          {template.label}
-          <RequiredStar>*</RequiredStar>
-        </Label>
-        
-        {fieldData.user_text ? (
-          <div style={{ 
-            padding: '10px', 
-            background: '#f8f9fa', 
-            border: '1px solid #dee2e6',
-            borderRadius: '4px',
-            marginBottom: '10px'
-          }}>
-            {fieldData.user_text}
-          </div>
-        ) : fieldData.user_file_path ? (
-          <FileInfo>
-            <span>📎 {getFileNameFromPath(fieldData.user_file_path)}</span>
-          </FileInfo>
-        ) : (
-          <div style={{ color: '#6c757d', fontStyle: 'italic' }}>
-            Не заполнено
-          </div>
-        )}
-      </FieldContainer>
-    );
-  }
+                  {template.field_type === 'text_field' ? (
+                    template.field_index <= 1 ? (
+                      <TextInput
+                        type="text"
+                        value={fieldData?.user_text || ''}
+                        onChange={(e) => handleInputChange(template.id, 'user_text', e.target.value)}
+                        placeholder={`Введите ${template.label.toLowerCase()}`}
+                        disabled={submitting || !isEditing}
+                      />
+                    ) : (
+                      <TextArea
+                        value={fieldData?.user_text || ''}
+                        onChange={(e) => handleInputChange(template.id, 'user_text', e.target.value)}
+                        placeholder={`Введите ${template.label.toLowerCase()}`}
+                        disabled={submitting || !isEditing}
+                      />
+                    )
+                  ) : (
+                    <div>
+                      {fieldData?.user_file_path ? (
+                        <FileInfo>
+                          <span>Прикрепленный файл: {getFileNameFromPath(fieldData.user_file_path)}</span> {/* Убрал смайлик */}
+                          {isEditing && (
+                            <SmallButton
+                              $danger
+                              onClick={() => handleFileDelete(template.id)}
+                              disabled={submitting}
+                            >
+                              Удалить
+                            </SmallButton>
+                          )}
+                        </FileInfo>
+                      ) : (
+                        <FileInput
+                          type="file"
+                          onChange={(e) => handleFileUpload(template.id, e.target.files[0])}
+                          disabled={uploading || submitting || !isEditing}
+                        />
+                      )}
+                      {uploading && <div>Загрузка файла...</div>}
+                    </div>
+                  )}
 
-  
-  return (
-    <FieldContainer key={template.id}>
-      <Label>
-        {template.label}
-        <RequiredStar>*</RequiredStar>
-      </Label>
-
-      {template.field_type === 'text_field' ? (
-        template.field_index <= 1 ? (
-          <TextInput
-            type="text"
-            value={fieldData.user_text || ''}
-            onChange={(e) => handleInputChange(template.id, 'user_text', e.target.value)}
-            placeholder={`Введите ${template.label.toLowerCase()}`}
-            disabled={submitting || !isEditing}
-          />
-        ) : (
-          <TextArea
-            value={fieldData.user_text || ''}
-            onChange={(e) => handleInputChange(template.id, 'user_text', e.target.value)}
-            placeholder={`Введите ${template.label.toLowerCase()}`}
-            disabled={submitting || !isEditing}
-          />
-        )
-      ) : (
-        <div>
-          {fieldData.user_file_path ? (
-            <FileInfo>
-              <span>{getFileNameFromPath(fieldData.user_file_path)}</span>
-              {isEditing && (
-                <SmallButton
-                  $danger
-                  onClick={() => handleFileDelete(template.id)}
-                  disabled={submitting}
-                >
-                  Удалить
-                </SmallButton>
-              )}
-            </FileInfo>
-          ) : (
-            <FileInput
-              type="file"
-              onChange={(e) => handleFileUpload(template.id, e.target.files[0])}
-              disabled={uploading || submitting || !isEditing}
-            />
-          )}
-          {uploading && <div>Загрузка файла...</div>}
-        </div>
-      )}
-
-      {isFieldFilled && (
-        <div style={{ fontSize: '12px', color: '#28a745', marginTop: '5px' }}>
-          ✓ Поле заполнено
-        </div>
-      )}
-    </FieldContainer>
-
-    
-  );
-})}
+                  {isFieldFilled && (
+                    <div style={{ fontSize: '12px', color: '#28a745', marginTop: '5px' }}>
+                      Поле заполнено {/* Убрал галочку */}
+                    </div>
+                  )}
+                </FieldContainer>
+              );
+            })}
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
-
-  {isEditing ? (
-    <>
-      <Button
-        $primary
-        onClick={handleSubmit}
-        disabled={submitting || uploading || !isFormValid()}
-      >
-        {submitting ? '⏳ Сохранение...' :
-         selectedStage.closing_rule === 'executor_closing'
-          ? 'Завершить этап'
-          : 'Отправить на проверку'}
-      </Button>
-      <Button
-        onClick={handleCancelEdit}
-        disabled={submitting}
-      >
-        Отмена
-      </Button>
-    </>
-  ) : selectedStage?.status === 'waiting_approval' ? (
-    <>
-      <Button
-        $primary
-        onClick={handleEdit}
-      >
-       Изменить
-      </Button>
-      <Button
-        onClick={() => setSelectedStage(null)}
-      >
-        Закрыть
-      </Button>
-    </>
-  ) : (
-    <>
-      <Button
-        $primary
-        onClick={handleSubmit}
-        disabled={submitting || uploading || !isFormValid()}
-      >
-        {submitting ? '⏳ Сохранение...' :
-         selectedStage.closing_rule === 'executor_closing'
-          ? 'Завершить этап'
-          : 'Отправить на проверку'}
-      </Button>
-      <Button
-        onClick={() => setSelectedStage(null)}
-        disabled={submitting}
-      >
-        Отмена
-      </Button>
-    </>
-  )}
-</div>
+              {isEditing ? (
+                <>
+                  <Button
+                    $primary
+                    onClick={handleSubmit}
+                    disabled={submitting || uploading || !isFormValid()}
+                  >
+                    {submitting ? 'Сохранение...' : /* Убрал смайлик */
+                    selectedStage.closing_rule === 'executor_closing'
+                      ? 'Завершить этап'
+                      : 'Отправить на проверку'}
+                  </Button>
+                  <Button
+                    onClick={handleCancelEdit}
+                    disabled={submitting}
+                  >
+                    Отмена
+                  </Button>
+                </>
+              ) : selectedStage?.status === 'waiting_approval' ? (
+                <>
+                  <Button
+                    $primary
+                    onClick={handleEdit}
+                  >
+                    Изменить
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedStage(null)}
+                  >
+                    Закрыть
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    $primary
+                    onClick={handleSubmit}
+                    disabled={submitting || uploading || !isFormValid()}
+                  >
+                    {submitting ? 'Сохранение...' : /* Убрал смайлик */
+                    selectedStage.closing_rule === 'executor_closing'
+                      ? 'Завершить этап'
+                      : 'Отправить на проверку'}
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedStage(null)}
+                    disabled={submitting}
+                  >
+                    Отмена
+                  </Button>
+                </>
+              )}
+            </div>
             
-  {!isFormValid() && isEditing && (
-  <div style={{ fontSize: '14px', color: '#dc3545', marginTop: '10px' }}>
-    ⚠ Заполните все обязательные поля для отправки
-  </div>
-)}
+            {!isFormValid() && isEditing && (
+              <div style={{ fontSize: '14px', color: '#dc3545', marginTop: '10px' }}>
+                Заполните все обязательные поля для отправки {/* Убрал предупреждающий знак */}
+              </div>
+            )}
 
-
-{(selectedStage.status === 'rework' || selectedStage.status === 'waiting_approval') && selectedStage.manager_comment && (
-  <FieldContainer style={{ 
-    borderLeftColor: '#fd7e14', 
-    background: '#fff3cd',
-    marginBottom: '20px'
-  }}>
-    <Label style={{ color: '#856404', fontWeight: 'bold' }}>
-      Комментарий руководителя:
-    </Label>
-    <div style={{ 
-      padding: '12px', 
-      background: 'white', 
-      border: '1px solid #ffeaa7', 
-      borderRadius: '4px',
-      fontStyle: 'italic',
-      color: '#856404'
-    }}>
-      {selectedStage.manager_comment}
-    </div>
-  </FieldContainer>
-)} </ModalContent>
+            {(selectedStage.status === 'rework' || selectedStage.status === 'waiting_approval') && selectedStage.manager_comment && (
+              <FieldContainer style={{ 
+                borderLeftColor: '#fd7e14', 
+                background: '#fff3cd',
+                marginBottom: '20px'
+              }}>
+                <Label style={{ color: '#856404', fontWeight: 'bold' }}>
+                  Комментарий руководителя:
+                </Label>
+                <div style={{ 
+                  padding: '12px', 
+                  background: 'white', 
+                  border: '1px solid #ffeaa7', 
+                  borderRadius: '4px',
+                  fontStyle: 'italic',
+                  color: '#856404'
+                }}>
+                  {selectedStage.manager_comment}
+                </div>
+              </FieldContainer>
+            )}
+          </ModalContent>
         </Modal>
-        
       )}
     </Container>
   );

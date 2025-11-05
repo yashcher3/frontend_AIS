@@ -70,12 +70,10 @@ export default function FeedbackSection({onAuthorizationSuccess, login_user, use
             if (response.ok) {
                 const data = await response.json();
 
-                // Сохраняем токен в localStorage
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('username', data.username);
                 localStorage.setItem('user_role', data.role);
 
-                // Вызываем колбэки с данными пользователя
                 onAuthorizationSuccess("authorized");
                 login_user({
                     username: data.username,
@@ -268,9 +266,7 @@ export default function FeedbackSection({onAuthorizationSuccess, login_user, use
                     <li>manager / managertestpassword (руководитель)</li>
                     <li>executor_1 / executortestpassword (пользователь)</li>
                 </ul>
-                <p style={{ marginTop: '10px', fontWeight: 'bold' }}>
-                    Создание дел доступно только для администраторов и руководителей
-                </p>
+                
             </div>
         </div>
     );
